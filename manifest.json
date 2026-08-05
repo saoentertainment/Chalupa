@@ -1,0 +1,18 @@
+{
+  "name": "SAO Control · La Chalupa",
+  "short_name": "SAO Chalupa",
+  "description": "Control de servicios musicales · TOTAL FEST",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a1929",
+  "theme_color": "#0a1929",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%238e24aa'/><text x='50' y='70' font-size='52' text-anchor='middle'>🎤</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
