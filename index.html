@@ -68,6 +68,20 @@
         <h1 style="color: var(--azul-claro); font-size: 1.4em;">🎤 SAO Control</h1>
         <p style="color: var(--gris); margin-top: 8px;">La Chalupa Lerma · En construcción... 🚧</p>
     </div>
-
+    
+    <!-- 🛡️ ACTIVAR SERVICE WORKER (modo offline) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registro) => {
+                        console.log('✅ Service Worker activo');
+                    })
+                    .catch((error) => {
+                        console.log('❌ Error con el SW:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
