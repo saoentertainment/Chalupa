@@ -200,7 +200,25 @@
             font-weight: bold;
             padding: 16px;
             cursor: pointer;
-        }        
+        }   
+        /* 💵 PANTALLA PAGO */
+        .monto-grande {
+            font-size: 1.6em !important;
+            font-weight: bold;
+            text-align: center;
+        }
+        .chip {
+            flex: 1;
+            background: rgba(25, 118, 210, 0.2);
+            border: 1px solid var(--azul);
+            color: var(--azul-claro);
+            border-radius: 20px;
+            padding: 10px;
+            font-size: 0.95em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .chip:active { background: rgba(25, 118, 210, 0.5); }        
     </style>
 </head>
 <body>
@@ -260,8 +278,34 @@
     <!-- 💵 PANTALLA: PAGO -->
     <div id="pantalla-pago" class="pantalla">
         <div class="card">
-            <h2 style="color: var(--azul-claro);">💵 Registrar Pago</h2>
-            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+            <h2 style="color: var(--azul-claro); margin-bottom: 16px;">💵 Registrar Pago</h2>
+
+            <div class="form-grupo">
+                <label class="form-label">📅 Fecha del pago</label>
+                <input type="date" id="pg-fecha" class="form-input">
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">💰 Monto recibido ($)</label>
+                <input type="number" id="pg-monto" class="form-input monto-grande" min="0" inputmode="numeric" placeholder="0" oninput="previsualizarPago()">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button class="chip" onclick="setMonto(550)">$550</button>
+                <button class="chip" onclick="setMonto(1100)">$1,100</button>
+                <button class="chip" onclick="setMonto(2200)">$2,200</button>
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">📝 Nota (opcional)</label>
+                <input type="text" id="pg-nota" class="form-input" placeholder="Ej: pago semanal, adelanto...">
+            </div>
+
+            <div style="background: rgba(76, 175, 80, 0.12); border: 1px solid var(--verde); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 16px;">
+                <p id="pg-preview" style="color: var(--blanco); font-size: 0.95em;"></p>
+            </div>
+
+            <button class="btn-guardar" onclick="guardarPago()">💾 GUARDAR PAGO</button>
         </div>
     </div>
 
@@ -405,7 +449,7 @@
                 <div class="card" style="border: 2px solid var(--verde); text-align: center;">
                     <p style="color: var(--gris); font-size: 0.9em;">🟢 TODO LIQUIDADO</p>
                     <p class="saldo-gigante" style="color: var(--verde);">$0</p>
-                    <p style="color: var(--gris); font-size: 0.85em;">Jesús está al corriente 🎉</p>
+                    <p style="color: var(--gris); font-size: 0.85em;">${saldo < 0 ? 'Saldo a favor de Jesús: ' + formatearDinero(Math.abs(saldo)) : 'Jesús está al corriente 🎉'}</p>
                 </div>`;
             }
 
@@ -501,6 +545,62 @@
             document.getElementById('sv-fecha').value = hoyISO();
             actualizarHoras();
         }
+        // 💵 Poner un monto rápido (los chips)
+        function setMonto(valor) {
+            document.getElementById('pg-monto').value = valor;
+            previsualizarPago();
+        }
+
+        // 👀 Mostrar EN VIVO cómo quedará el saldo con este pago
+        function previsualizarPago() {
+            const monto = parseFloat(document.getElementById('pg-monto').value) || 0;
+            const { saldo } = calcularTotales();
+            const el = document.getElementById('pg-preview');
+
+            if (monto <= 0) {
+                el.innerHTML = '💰 Saldo pendiente actual: <b>' + formatearDinero(saldo) + '</b>';
+                return;
+            }
+            const nuevo = saldo - monto;
+            if (nuevo > 0) {
+                el.innerHTML = 'Después de este pago quedará: <b style="color: var(--rojo);">' + formatearDinero(nuevo) + '</b>';
+            } else if (nuevo === 0) {
+                el.innerHTML = '🟢 ¡Con este pago queda <b>LIQUIDADO</b>!';
+            } else {
+                el.innerHTML = '⚠️ Este pago excede el saldo por <b>' + formatearDinero(Math.abs(nuevo)) + '</b>';
+            }
+        }
+
+        // 💾 Guardar un pago
+        function guardarPago() {
+            const fecha = document.getElementById('pg-fecha').value;
+            const monto = parseFloat(document.getElementById('pg-monto').value);
+            const nota = document.getElementById('pg-nota').value.trim();
+
+            if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
+            if (!monto || monto <= 0) { mostrarToast('⚠️ Poné el monto del pago'); return; }
+
+            DATA_APP.pagos.push({
+                id: Date.now(),
+                fecha: fecha,
+                monto: monto,
+                nota: nota
+            });
+            guardarDatos();
+            sonarDing();
+            vibrar();
+            mostrarToast('💵 Pago registrado');
+            renderHome();
+            setTimeout(() => irADesde('home'), 1000);
+        }
+
+        // 🎬 Preparar el formulario de pago al entrar
+        function prepararFormPago() {
+            document.getElementById('pg-fecha').value = hoyISO();
+            document.getElementById('pg-monto').value = '';
+            document.getElementById('pg-nota').value = '';
+            previsualizarPago();
+        }        
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
@@ -519,6 +619,7 @@
             window.scrollTo(0, 0);
             // 🎬 Preparar formularios y refrescar pantallas al entrar
             if (nombre === 'servicio' && typeof prepararFormServicio === 'function') prepararFormServicio();
+            if (nombre === 'pago' && typeof prepararFormPago === 'function') prepararFormPago();            
             if (nombre === 'home' && typeof renderHome === 'function') renderHome();
         }
     </script>
