@@ -166,6 +166,40 @@
         #toast.visible {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+        } 
+        /* 📝 FORMULARIOS */
+        .form-grupo { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            color: var(--gris);
+            font-size: 0.85em;
+            margin-bottom: 6px;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            background: rgba(10, 25, 41, 0.6);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            border-radius: 10px;
+            color: var(--blanco);
+            font-size: 1.1em;
+            padding: 12px;
+            outline: none;
+        }
+        .form-input:focus, .form-select:focus {
+            border-color: var(--azul-claro);
+        }
+        .form-select option { background: var(--card); }
+        input[type="date"], input[type="time"] { color-scheme: dark; }
+        .btn-guardar {
+            width: 100%;
+            background: linear-gradient(135deg, var(--verde), #2e7d32);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.15em;
+            font-weight: bold;
+            padding: 16px;
+            cursor: pointer;
         }        
     </style>
 </head>
@@ -182,8 +216,44 @@
     <!-- 🎤 PANTALLA: SERVICIO -->
     <div id="pantalla-servicio" class="pantalla">
         <div class="card">
-            <h2 style="color: var(--azul-claro);">🎤 Registrar Servicio</h2>
-            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+            <h2 style="color: var(--azul-claro); margin-bottom: 16px;">🎤 Registrar Servicio</h2>
+
+            <div class="form-grupo">
+                <label class="form-label">📅 Fecha del servicio</label>
+                <input type="date" id="sv-fecha" class="form-input">
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">🎯 Tipo de servicio</label>
+                <select id="sv-tipo" class="form-select">
+                    <option value="Karaoke">🎤 Karaoke</option>
+                    <option value="Música en Vivo">🎸 Música en Vivo</option>
+                    <option value="Evento Especial">🎉 Evento Especial</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <div class="form-grupo" style="flex: 1;">
+                    <label class="form-label">🌇 Inicio</label>
+                    <input type="time" id="sv-inicio" class="form-input" value="20:00" onchange="actualizarHoras()">
+                </div>
+                <div class="form-grupo" style="flex: 1;">
+                    <label class="form-label">🌙 Fin</label>
+                    <input type="time" id="sv-fin" class="form-input" value="01:00" onchange="actualizarHoras()">
+                </div>
+            </div>
+
+            <div style="background: rgba(142, 36, 170, 0.15); border: 1px solid var(--morado); border-radius: 12px; padding: 12px; text-align: center;">
+                <p style="color: var(--gris); font-size: 0.85em;">⏱️ Horas trabajadas</p>
+                <p id="sv-horas" style="font-size: 2em; font-weight: bold; color: var(--azul-claro);">5 hrs</p>
+            </div>
+
+            <div class="form-grupo" style="margin-top: 16px;">
+                <label class="form-label">💰 Costo del servicio ($)</label>
+                <input type="number" id="sv-costo" class="form-input" value="1100" min="0" inputmode="numeric">
+            </div>
+
+            <button class="btn-guardar" onclick="guardarServicio()">💾 GUARDAR SERVICIO</button>
         </div>
     </div>
 
@@ -379,7 +449,58 @@
             const mapa = { home: 0, servicio: 1, pago: 2, historial: 3, reporte: 4 };
             irA(nombre, document.querySelectorAll('.nav-btn')[mapa[nombre]]);
         }
+        
+        // ⏱️ Calcular horas entre inicio y fin (entiende si cruza la medianoche 🌙)
+        function calcularHoras(inicio, fin) {
+            if (!inicio || !fin) return 0;
+            const [hi, mi] = inicio.split(':').map(Number);
+            const [hf, mf] = fin.split(':').map(Number);
+            let mins = (hf * 60 + mf) - (hi * 60 + mi);
+            if (mins <= 0) mins += 24 * 60; // cruzó la medianoche
+            return Math.round((mins / 60) * 10) / 10;
+        }
 
+        // 🔄 Actualizar las horas en pantalla mientras cambiás los horarios
+        function actualizarHoras() {
+            const inicio = document.getElementById('sv-inicio').value;
+            const fin = document.getElementById('sv-fin').value;
+            document.getElementById('sv-horas').textContent = calcularHoras(inicio, fin) + ' hrs';
+        }
+
+        // 💾 Guardar un servicio nuevo
+        function guardarServicio() {
+            const fecha = document.getElementById('sv-fecha').value;
+            const tipo = document.getElementById('sv-tipo').value;
+            const horaInicio = document.getElementById('sv-inicio').value;
+            const horaFin = document.getElementById('sv-fin').value;
+            const costo = parseFloat(document.getElementById('sv-costo').value);
+
+            if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
+            if (!horaInicio || !horaFin) { mostrarToast('⚠️ Completá los horarios'); return; }
+            if (!costo || costo <= 0) { mostrarToast('⚠️ Poné un costo válido'); return; }
+
+            DATA_APP.servicios.push({
+                id: Date.now(),
+                fecha: fecha,
+                tipo: tipo,
+                horaInicio: horaInicio,
+                horaFin: horaFin,
+                horas: calcularHoras(horaInicio, horaFin),
+                costo: costo
+            });
+            guardarDatos();
+            sonarDing();
+            vibrar();
+            mostrarToast('✅ Servicio guardado');
+            renderHome();
+            setTimeout(() => irADesde('home'), 1000);
+        }
+
+        // 🎬 Preparar el formulario al entrar a la pantalla
+        function prepararFormServicio() {
+            document.getElementById('sv-fecha').value = hoyISO();
+            actualizarHoras();
+        }
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
@@ -393,9 +514,12 @@
             document.getElementById('pantalla-' + nombre).classList.add('activa');
             // Marcar el botón activo en la barra
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('activo'));
-            boton.classList.add('activo');
+            if (boton) boton.classList.add('activo');
             // Scroll hacia arriba
             window.scrollTo(0, 0);
+            // 🎬 Preparar formularios y refrescar pantallas al entrar
+            if (nombre === 'servicio' && typeof prepararFormServicio === 'function') prepararFormServicio();
+            if (nombre === 'home' && typeof renderHome === 'function') renderHome();
         }
     </script>
     
