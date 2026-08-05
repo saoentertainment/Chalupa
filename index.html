@@ -59,15 +59,126 @@
             padding: 16px;
             margin-bottom: 12px;
         }
+        /* 📱 PANTALLAS: solo se ve la que tiene la clase "activa" */
+        .pantalla {
+            display: none;
+            animation: aparecer 0.25s ease;
+        }
+        .pantalla.activa {
+            display: block;
+        }
+        @keyframes aparecer {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 🧭 BARRA DE NAVEGACIÓN INFERIOR */
+        .navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(19, 47, 76, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 4px;
+            border-top: 1px solid rgba(100, 181, 246, 0.25);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--gris);
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 10px;
+        }
+        .nav-btn .nav-icono { font-size: 22px; }
+        .nav-btn.activo { color: var(--azul-claro); }        
     </style>
 </head>
 <body>
 
-    <!-- 🏠 CONTENIDO (lo llenamos en el Paso 2) -->
-    <div class="card">
-        <h1 style="color: var(--azul-claro); font-size: 1.4em;">🎤 SAO Control</h1>
-        <p style="color: var(--gris); margin-top: 8px;">La Chalupa Lerma · En construcción... 🚧</p>
+    <!-- 🏠 PANTALLA: HOME -->
+    <div id="pantalla-home" class="pantalla activa">
+        <div class="card">
+            <h1 style="color: var(--azul-claro); font-size: 1.5em;">🎤 SAO Control</h1>
+            <p style="color: var(--gris); margin-top: 4px;">La Chalupa Lerma</p>
+            <p style="margin-top: 16px;">🚧 Aquí va el saldo pendiente (próximo paso)</p>
+        </div>
     </div>
+
+    <!-- 🎤 PANTALLA: SERVICIO -->
+    <div id="pantalla-servicio" class="pantalla">
+        <div class="card">
+            <h2 style="color: var(--azul-claro);">🎤 Registrar Servicio</h2>
+            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+        </div>
+    </div>
+
+    <!-- 💵 PANTALLA: PAGO -->
+    <div id="pantalla-pago" class="pantalla">
+        <div class="card">
+            <h2 style="color: var(--azul-claro);">💵 Registrar Pago</h2>
+            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+        </div>
+    </div>
+
+    <!-- 📋 PANTALLA: HISTORIAL -->
+    <div id="pantalla-historial" class="pantalla">
+        <div class="card">
+            <h2 style="color: var(--azul-claro);">📋 Historial</h2>
+            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+        </div>
+    </div>
+
+    <!-- 📄 PANTALLA: REPORTE -->
+    <div id="pantalla-reporte" class="pantalla">
+        <div class="card">
+            <h2 style="color: var(--azul-claro);">📄 Reporte</h2>
+            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+        </div>
+    </div>
+
+    <!-- 🧭 BARRA DE NAVEGACIÓN -->
+    <nav class="navbar">
+        <button class="nav-btn activo" onclick="irA('home', this)">
+            <span class="nav-icono">🏠</span>Inicio
+        </button>
+        <button class="nav-btn" onclick="irA('servicio', this)">
+            <span class="nav-icono">🎤</span>Servicio
+        </button>
+        <button class="nav-btn" onclick="irA('pago', this)">
+            <span class="nav-icono">💵</span>Pago
+        </button>
+        <button class="nav-btn" onclick="irA('historial', this)">
+            <span class="nav-icono">📋</span>Historial
+        </button>
+        <button class="nav-btn" onclick="irA('reporte', this)">
+            <span class="nav-icono">📄</span>Reporte
+        </button>
+    </nav>
+
+    <!-- 🧠 JAVASCRIPT: navegación entre pantallas -->
+    <script>
+        function irA(nombre, boton) {
+            // Ocultar todas las pantallas
+            document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+            // Mostrar la elegida
+            document.getElementById('pantalla-' + nombre).classList.add('activa');
+            // Marcar el botón activo en la barra
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('activo'));
+            boton.classList.add('activo');
+            // Scroll hacia arriba
+            window.scrollTo(0, 0);
+        }
+    </script>
     
     <!-- 🛡️ ACTIVAR SERVICE WORKER (modo offline) -->
     <script>
