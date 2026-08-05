@@ -1,7 +1,7 @@
 // 🛡️ Service Worker - SAO Control · La Chalupa
-// Estrategia: Cache-first (funciona offline)
+// Estrategia: Network-first (siempre lo último; offline usa el baúl)
 
-const CACHE_NAME = 'sao-chalupa-v1';
+const CACHE_NAME = 'sao-chalupa-v2';
 
 const ARCHIVOS = [
     './',
@@ -18,7 +18,7 @@ self.addEventListener('install', (evento) => {
     self.skipWaiting();
 });
 
-// 🧹 ACTIVAR: borra baúles viejos (versiones anteriores)
+// 🧹 ACTIVAR: borra baúles viejos
 self.addEventListener('activate', (evento) => {
     evento.waitUntil(
         caches.keys().then((nombres) => {
@@ -31,21 +31,25 @@ self.addEventListener('activate', (evento) => {
     );
 });
 
-// 🔍 BUSCAR: primero busca en el baúl, si no está, va a internet
+// 🔍 BUSCAR: primero internet, si no hay → usa el baúl
 self.addEventListener('fetch', (evento) => {
     evento.respondWith(
-        caches.match(evento.request).then((respuestaGuardada) => {
-            if (respuestaGuardada) {
-                return respuestaGuardada; // ✅ Estaba en el baúl
-            }
-            return fetch(evento.request).then((respuesta) => {
-                return caches.open(CACHE_NAME).then((cache) => {
+        fetch(evento.request)
+            .then((respuesta) => {
+                // Mientras hay internet, guardamos una copia en el baúl
+                const copia = respuesta.clone();
+                caches.open(CACHE_NAME).then((cache) => {
                     if (evento.request.method === 'GET' && respuesta.status === 200) {
-                        cache.put(evento.request, respuesta.clone());
+                        cache.put(evento.request, copia);
                     }
-                    return respuesta;
                 });
-            });
-        }).catch(() => caches.match('./index.html'))
+                return respuesta;
+            })
+            .catch(() => {
+                // 📵 Sin internet → buscamos en el baúl
+                return caches.match(evento.request).then((guardado) => {
+                    return guardado || caches.match('./index.html');
+                });
+            })
     );
 });
