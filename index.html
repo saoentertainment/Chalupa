@@ -100,16 +100,81 @@
             border-radius: 10px;
         }
         .nav-btn .nav-icono { font-size: 22px; }
-        .nav-btn.activo { color: var(--azul-claro); }        
+        .nav-btn.activo { color: var(--azul-claro); }       
+        /* 💰 SALDO GIGANTE */
+        .saldo-gigante {
+            font-size: 3em;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        /* 📊 RESUMEN */
+        .resumen-grid {
+            display: flex;
+            gap: 12px;
+        }
+        .resumen-item {
+            flex: 1;
+            background: rgba(10, 25, 41, 0.5);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+        .resumen-numero { font-size: 1.3em; font-weight: bold; }
+        .resumen-label { color: var(--gris); font-size: 0.8em; margin-top: 4px; }
+
+        /* 🎯 BOTONES DE ACCIÓN RÁPIDA */
+        .acciones-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .btn-accion {
+            border: none;
+            border-radius: 16px;
+            padding: 20px 12px;
+            font-size: 1em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-morado { background: linear-gradient(135deg, var(--morado), #6a1b9a); }
+        .btn-verde { background: linear-gradient(135deg, var(--verde), #2e7d32); }
+
+        /* 🍞 TOAST (mensaje flotante, reemplaza al alert) */
+        #toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--card);
+            border: 1px solid var(--azul-claro);
+            color: var(--blanco);
+            padding: 12px 24px;
+            border-radius: 30px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            z-index: 200;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+        #toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }        
     </style>
 </head>
 <body>
 
-    <!-- 🏠 PANTALLA: HOME -->
+    <!-- 🏠 PANTALLA: HOME (la dibuja el JavaScript con los datos reales) -->
     <div id="pantalla-home" class="pantalla activa">
-        <div class="card">
-            <h1 style="color: var(--azul-claro); font-size: 1.5em;">🎤 SAO Control</h1>
-            <p style="color: var(--gris); margin-top: 4px;">La Chalupa Lerma</p>
+        <div id="home-contenido"></div>
+    </div>
             <p style="margin-top: 16px;">🚧 Aquí va el saldo pendiente (próximo paso)</p>
         </div>
     </div>
@@ -145,7 +210,9 @@
             <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
         </div>
     </div>
-
+    
+    <!-- 🍞 Toast -->
+    <div id="toast"></div>
     <!-- 🧭 BARRA DE NAVEGACIÓN -->
     <nav class="navbar">
         <button class="nav-btn activo" onclick="irA('home', this)">
@@ -164,7 +231,159 @@
             <span class="nav-icono">📄</span>Reporte
         </button>
     </nav>
+    
+    <!-- 🧠 CEREBRO: datos + funciones base -->
+    <script>
+        // 📦 EL CUADERNO: aquí viven tus servicios y pagos
+        let DATA_APP = {
+            servicios: [],  // cada uno: { id, fecha, tipo, horaInicio, horaFin, horas, costo }
+            pagos: []       // cada uno: { id, fecha, monto }
+        };
 
+        // 💾 LEER del estante (localStorage)
+        function cargarDatos() {
+            const guardado = localStorage.getItem('saoChalupaData');
+            if (guardado) {
+                try { DATA_APP = JSON.parse(guardado); }
+                catch (e) { console.log('Datos ilegibles, empezamos de cero'); }
+            }
+        }
+
+        // 💾 GUARDAR en el estante
+        function guardarDatos() {
+            localStorage.setItem('saoChalupaData', JSON.stringify(DATA_APP));
+        }
+
+        // 💰 Calcular totales
+        function calcularTotales() {
+            const totalServicios = DATA_APP.servicios.reduce((suma, s) => suma + s.costo, 0);
+            const totalPagos = DATA_APP.pagos.reduce((suma, p) => suma + p.monto, 0);
+            return { totalServicios, totalPagos, saldo: totalServicios - totalPagos };
+        }
+
+        // 💵 1100 → "$1,100"
+        function formatearDinero(n) {
+            return '$' + n.toLocaleString('es-MX');
+        }
+
+        // 📅 "2026-08-06" → "Jueves 06/Ago"
+        function formatearFecha(fechaISO) {
+            const [y, m, d] = fechaISO.split('-').map(Number);
+            const fecha = new Date(y, m - 1, d, 12, 0, 0); // mediodía: evita el bug del día anterior
+            const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+            const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            return dias[fecha.getDay()] + ' ' + String(d).padStart(2, '0') + '/' + meses[fecha.getMonth()];
+        }
+
+        // 📅 Fecha de hoy en formato ISO
+        function hoyISO() {
+            const f = new Date();
+            return f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0') + '-' + String(f.getDate()).padStart(2, '0');
+        }
+
+        // 🔊 Sonido "ding" al guardar
+        function sonarDing() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gan = ctx.createGain();
+                osc.connect(gan);
+                gan.connect(ctx.destination);
+                osc.frequency.value = 880;
+                osc.type = 'sine';
+                gan.gain.setValueAtTime(0.3, ctx.currentTime);
+                gan.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } catch (e) {}
+        }
+
+        // 📳 Vibración
+        function vibrar() {
+            if (navigator.vibrate) navigator.vibrate(80);
+        }
+
+        // 🍞 Mostrar toast
+        function mostrarToast(texto) {
+            const t = document.getElementById('toast');
+            t.textContent = texto;
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 2500);
+        }
+
+        // 🏠 DIBUJAR EL HOME
+        function renderHome() {
+            const { totalServicios, totalPagos, saldo } = calcularTotales();
+            const cont = document.getElementById('home-contenido');
+
+            const ultimoServicio = DATA_APP.servicios.length
+                ? [...DATA_APP.servicios].sort((a, b) => b.fecha.localeCompare(a.fecha))[0] : null;
+            const ultimoPago = DATA_APP.pagos.length
+                ? [...DATA_APP.pagos].sort((a, b) => b.fecha.localeCompare(a.fecha))[0] : null;
+
+            let html = '';
+
+            // 💰 El saldo GIGANTE
+            if (saldo > 0) {
+                html += `
+                <div class="card" style="border: 2px solid var(--rojo); text-align: center;">
+                    <p style="color: var(--gris); font-size: 0.9em;">🔴 SALDO PENDIENTE</p>
+                    <p class="saldo-gigante" style="color: var(--rojo);">${formatearDinero(saldo)}</p>
+                </div>`;
+            } else {
+                html += `
+                <div class="card" style="border: 2px solid var(--verde); text-align: center;">
+                    <p style="color: var(--gris); font-size: 0.9em;">🟢 TODO LIQUIDADO</p>
+                    <p class="saldo-gigante" style="color: var(--verde);">$0</p>
+                    <p style="color: var(--gris); font-size: 0.85em;">Jesús está al corriente 🎉</p>
+                </div>`;
+            }
+
+            // 📊 Resumen
+            html += `
+            <div class="card">
+                <div class="resumen-grid">
+                    <div class="resumen-item">
+                        <p class="resumen-numero" style="color: var(--azul-claro);">${formatearDinero(totalServicios)}</p>
+                        <p class="resumen-label">Total servicios</p>
+                    </div>
+                    <div class="resumen-item">
+                        <p class="resumen-numero" style="color: var(--verde);">${formatearDinero(totalPagos)}</p>
+                        <p class="resumen-label">Pagos recibidos</p>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(100,181,246,0.15); color: var(--gris); font-size: 0.85em; line-height: 1.7;">
+                    🎤 ${ultimoServicio ? 'Último servicio: ' + formatearFecha(ultimoServicio.fecha) : 'Sin servicios registrados aún'}<br>
+                    💵 ${ultimoPago ? 'Último pago: ' + formatearFecha(ultimoPago.fecha) + ' · ' + formatearDinero(ultimoPago.monto) : 'Sin pagos registrados aún'}
+                </div>
+            </div>`;
+
+            // 🎯 Botones de acción rápida
+            html += `
+            <div class="acciones-grid">
+                <button class="btn-accion btn-morado" onclick="irADesde('servicio')">
+                    <span style="font-size: 2em;">🎤</span>
+                    <span>Registrar Servicio</span>
+                </button>
+                <button class="btn-accion btn-verde" onclick="irADesde('pago')">
+                    <span style="font-size: 2em;">💵</span>
+                    <span>Registrar Pago</span>
+                </button>
+            </div>`;
+
+            cont.innerHTML = html;
+        }
+
+        // 🧭 Ir a una pantalla desde un botón fuera de la barra
+        function irADesde(nombre) {
+            const mapa = { home: 0, servicio: 1, pago: 2, historial: 3, reporte: 4 };
+            irA(nombre, document.querySelectorAll('.nav-btn')[mapa[nombre]]);
+        }
+
+        // 🚀 ARRANQUE
+        cargarDatos();
+        renderHome();
+    </script>
     <!-- 🧠 JAVASCRIPT: navegación entre pantallas -->
     <script>
         function irA(nombre, boton) {
