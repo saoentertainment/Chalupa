@@ -218,7 +218,20 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .chip:active { background: rgba(25, 118, 210, 0.5); }        
+        .chip:active { background: rgba(25, 118, 210, 0.5); } 
+        /* 📋 HISTORIAL */
+        .hist-item { padding: 14px; }
+        .btn-borrar {
+            background: rgba(239, 83, 80, 0.15);
+            border: 1px solid var(--rojo);
+            color: var(--rojo);
+            border-radius: 10px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 1em;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }        
     </style>
 </head>
 <body>
@@ -311,10 +324,8 @@
 
     <!-- 📋 PANTALLA: HISTORIAL -->
     <div id="pantalla-historial" class="pantalla">
-        <div class="card">
-            <h2 style="color: var(--azul-claro);">📋 Historial</h2>
-            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
-        </div>
+        <h2 style="color: var(--azul-claro); margin-bottom: 12px;">📋 Historial de Movimientos</h2>
+        <div id="historial-contenido"></div>
     </div>
 
     <!-- 📄 PANTALLA: REPORTE -->
@@ -600,7 +611,130 @@
             document.getElementById('pg-monto').value = '';
             document.getElementById('pg-nota').value = '';
             previsualizarPago();
-        }        
+        }
+         // 🚦 Calcula cuánto se pagó de cada servicio
+        // (los pagos cubren primero lo más viejo, como en la vida real)
+        function calcularEstados() {
+            const ordenados = [...DATA_APP.servicios].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+            let disponible = DATA_APP.pagos.reduce((suma, p) => suma + p.monto, 0);
+            const estados = {};
+            ordenados.forEach(sv => {
+                let pagado = 0;
+                if (disponible >= sv.costo) {
+                    pagado = sv.costo;
+                    disponible -= sv.costo;
+                } else if (disponible > 0) {
+                    pagado = disponible;
+                    disponible = 0;
+                }
+                estados[sv.id] = { pagado: pagado, restante: sv.costo - pagado };
+            });
+            return estados;
+        }
+
+        // 📋 Dibujar el historial
+        function renderHistorial() {
+            const cont = document.getElementById('historial-contenido');
+            const estados = calcularEstados();
+
+            if (!DATA_APP.servicios.length && !DATA_APP.pagos.length) {
+                cont.innerHTML = '<div class="card" style="text-align: center; color: var(--gris);">📭 Todavía no hay nada registrado.<br>¡Empezá agregando tu primer servicio! 🎤</div>';
+                return;
+            }
+
+            // Mezclar servicios y pagos, ordenados por fecha (lo nuevo arriba)
+            const items = [];
+            DATA_APP.servicios.forEach(sv => items.push({ clase: 'servicio', fecha: sv.fecha, id: sv.id, data: sv }));
+            DATA_APP.pagos.forEach(pg => items.push({ clase: 'pago', fecha: pg.fecha, id: pg.id, data: pg }));
+            items.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+
+            let html = '<p style="color: var(--gris); font-size: 0.85em; text-align: center; margin-bottom: 12px;">📜 ' + items.length + ' movimientos registrados</p>';
+
+            items.forEach(item => {
+                if (item.clase === 'servicio') {
+                    const sv = item.data;
+                    const est = estados[sv.id];
+                    let semaforo, borde, estadoHtml;
+                    if (est.restante <= 0) {
+                        semaforo = '🟢';
+                        borde = 'var(--verde)';
+                        estadoHtml = '<span style="color: var(--verde);">LIQUIDADO</span>';
+                    } else if (est.pagado > 0) {
+                        semaforo = '🟡';
+                        borde = 'var(--amarillo)';
+                        estadoHtml = '<span style="color: var(--amarillo);">Resta: ' + formatearDinero(est.restante) + '</span>';
+                    } else {
+                        semaforo = '🔴';
+                        borde = 'var(--rojo)';
+                        estadoHtml = '<span style="color: var(--rojo);">Resta: ' + formatearDinero(est.restante) + '</span>';
+                    }
+
+                    html += `
+                    <div class="card hist-item" style="border-left: 4px solid ${borde};">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <p style="font-weight: bold;">🎤 ${sv.tipo} ${semaforo}</p>
+                                <p style="color: var(--gris); font-size: 0.85em; margin-top: 2px;">${formatearFecha(sv.fecha)} · ${sv.horaInicio} → ${sv.horaFin} · ${sv.horas} hrs</p>
+                                <p style="margin-top: 6px;"><b style="color: var(--azul-claro);">${formatearDinero(sv.costo)}</b> · ${estadoHtml}</p>
+                            </div>
+                            <button class="btn-borrar" onclick="confirmarBorrar('servicio', ${sv.id}, this)">🗑️</button>
+                        </div>
+                    </div>`;
+                } else {
+                    const pg = item.data;
+                    html += `
+                    <div class="card hist-item" style="border-left: 4px solid var(--verde);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <p style="font-weight: bold;">💵 Pago recibido</p>
+                                <p style="color: var(--gris); font-size: 0.85em; margin-top: 2px;">${formatearFecha(pg.fecha)}${pg.nota ? ' · ' + pg.nota : ''}</p>
+                                <p style="margin-top: 6px;"><b style="color: var(--verde);">+${formatearDinero(pg.monto)}</b></p>
+                            </div>
+                            <button class="btn-borrar" onclick="confirmarBorrar('pago', ${pg.id}, this)">🗑️</button>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            cont.innerHTML = html;
+        }
+
+        // 🗑️ Borrar con DOBLE confirmación (sin alerts)
+        function confirmarBorrar(clase, id, boton) {
+            if (boton.dataset.confirmando === 'si') {
+                // Segundo toque: ¡a la basura!
+                if (clase === 'servicio') {
+                    DATA_APP.servicios = DATA_APP.servicios.filter(s => s.id !== id);
+                } else {
+                    DATA_APP.pagos = DATA_APP.pagos.filter(p => p.id !== id);
+                }
+                guardarDatos();
+                sonarDing();
+                vibrar();
+                mostrarToast('🗑️ Eliminado');
+                renderHistorial();
+                renderHome();
+            } else {
+                // Primer toque: preguntar
+                boton.dataset.confirmando = 'si';
+                boton.textContent = '¿Seguro?';
+                boton.style.background = 'var(--rojo)';
+                boton.style.color = 'white';
+                boton.style.fontSize = '0.8em';
+                boton.style.padding = '10px 12px';
+                // Si no confirma en 3 segundos, se arrepiente solo
+                setTimeout(() => {
+                    if (boton.dataset.confirmando === 'si') {
+                        boton.dataset.confirmando = 'no';
+                        boton.textContent = '🗑️';
+                        boton.style.background = '';
+                        boton.style.color = '';
+                        boton.style.fontSize = '';
+                        boton.style.padding = '';
+                    }
+                }, 3000);
+            }
+        }       
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
@@ -619,7 +753,8 @@
             window.scrollTo(0, 0);
             // 🎬 Preparar formularios y refrescar pantallas al entrar
             if (nombre === 'servicio' && typeof prepararFormServicio === 'function') prepararFormServicio();
-            if (nombre === 'pago' && typeof prepararFormPago === 'function') prepararFormPago();            
+            if (nombre === 'pago' && typeof prepararFormPago === 'function') prepararFormPago();
+            if (nombre === 'historial' && typeof renderHistorial === 'function') renderHistorial();            
             if (nombre === 'home' && typeof renderHome === 'function') renderHome();
         }
     </script>
