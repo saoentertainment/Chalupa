@@ -233,6 +233,11 @@
             font-size: 1em;
             flex-shrink: 0;
             margin-left: 8px;
+        }
+        .chip-mini {
+            padding: 6px 2px;
+            font-size: 0.75em;
+            border-radius: 14px;
         }        
     </style>
 </head>
@@ -269,12 +274,23 @@
                 <div class="form-grupo" style="flex: 1;">
                     <label class="form-label">🌇 Inicio</label>
                     <input type="time" id="sv-inicio" class="form-input" value="20:00" onchange="actualizarHoras()">
+                    <div style="display: flex; gap: 6px; margin-top: 8px;">
+                        <button class="chip chip-mini" onclick="setInicio('19:00')">19:00</button>
+                        <button class="chip chip-mini" onclick="setInicio('20:00')">20:00</button>
+                        <button class="chip chip-mini" onclick="setInicio('21:00')">21:00</button>
+                    </div>
                 </div>
                 <div class="form-grupo" style="flex: 1;">
                     <label class="form-label">🌙 Fin</label>
                     <input type="time" id="sv-fin" class="form-input" value="01:00" onchange="actualizarHoras()">
+                    <div style="display: flex; gap: 6px; margin-top: 8px;">
+                        <button class="chip chip-mini" onclick="setFin('01:00')">01:00</button>
+                        <button class="chip chip-mini" onclick="setFin('02:00')">02:00 ⭐</button>
+                        <button class="chip chip-mini" onclick="setFin('03:00')">03:00 ⭐</button>
+                    </div>
                 </div>
             </div>
+            <p style="color: var(--gris); font-size: 0.78em; margin-bottom: 12px;">⭐ = hora extra. También podés tocar el reloj y escribir el horario que quieras (el que sea). ⏰</p>
 
             <div style="background: rgba(142, 36, 170, 0.15); border: 1px solid var(--morado); border-radius: 12px; padding: 12px; text-align: center;">
                 <p style="color: var(--gris); font-size: 0.85em;">⏱️ Horas trabajadas</p>
@@ -929,7 +945,18 @@
             document.getElementById('rp-desde').value = fechas.length ? fechas[0] : hoyISO();
             document.getElementById('rp-hasta').value = hoyISO();
             renderReporte();
-        }       
+        }  
+                // ⏰ Atajos rápidos de horario (inicio)
+        function setInicio(valor) {
+            document.getElementById('sv-inicio').value = valor;
+            actualizarHoras();
+        }
+
+        // ⏰ Atajos rápidos de horario (fin, incluye horas extra)
+        function setFin(valor) {
+            document.getElementById('sv-fin').value = valor;
+            actualizarHoras();
+        }
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
