@@ -330,9 +330,36 @@
 
     <!-- 📄 PANTALLA: REPORTE -->
     <div id="pantalla-reporte" class="pantalla">
+        <h2 style="color: var(--azul-claro); margin-bottom: 12px;">📄 Reporte para Jesús</h2>
+
         <div class="card">
-            <h2 style="color: var(--azul-claro);">📄 Reporte</h2>
-            <p style="color: var(--gris); margin-top: 8px;">🚧 Próximo paso</p>
+            <label class="form-label">📅 Periodo del reporte</label>
+            <div style="display: flex; gap: 12px;">
+                <div style="flex: 1;">
+                    <label class="form-label">Desde</label>
+                    <input type="date" id="rp-desde" class="form-input">
+                </div>
+                <div style="flex: 1;">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" id="rp-hasta" class="form-input">
+                </div>
+            </div>
+            <button class="btn-guardar" style="margin-top: 12px; background: linear-gradient(135deg, var(--azul), #0d47a1);" onclick="renderReporte()">🔄 Actualizar reporte</button>
+        </div>
+
+        <div class="card" style="background: rgba(10, 25, 41, 0.6);">
+            <pre id="rp-preview" style="white-space: pre-wrap; font-family: inherit; font-size: 0.9em; color: var(--blanco);"></pre>
+        </div>
+
+        <div class="acciones-grid">
+            <button class="btn-accion btn-verde" onclick="copiarReporte()">
+                <span style="font-size: 2em;">📋</span>
+                <span>Copiar para WhatsApp</span>
+            </button>
+            <button class="btn-accion btn-morado" onclick="generarPDF()">
+                <span style="font-size: 2em;">🖨️</span>
+                <span>Generar PDF</span>
+            </button>
         </div>
     </div>
     
@@ -734,6 +761,172 @@
                     }
                 }, 3000);
             }
+        }
+         // 📄 Generar el texto del reporte (para WhatsApp y vista previa)
+        function generarTextoReporte() {
+            const desde = document.getElementById('rp-desde').value;
+            const hasta = document.getElementById('rp-hasta').value;
+
+            const servicios = DATA_APP.servicios
+                .filter(s => (!desde || s.fecha >= desde) && (!hasta || s.fecha <= hasta))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
+            const pagos = DATA_APP.pagos
+                .filter(p => (!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+            const totalServicios = servicios.reduce((suma, s) => suma + s.costo, 0);
+            const totalPagos = pagos.reduce((suma, p) => suma + p.monto, 0);
+            const { saldo } = calcularTotales(); // acumulado TOTAL
+
+            let texto = '';
+            texto += '📄 REPORTE DE SERVICIOS\n';
+            texto += '🎤 KARAOKE SAO · TOTAL FEST\n';
+            texto += 'Cliente: LA CHALUPA LERMA\n';
+            texto += "At'n: Jesus Arias Velazco\n\n";
+            texto += '📅 Periodo: ' + (desde ? formatearFecha(desde) : 'inicio') + ' al ' + (hasta ? formatearFecha(hasta) : 'hoy') + '\n\n';
+
+            if (servicios.length) {
+                texto += '🎤 SERVICIOS:\n';
+                servicios.forEach(s => {
+                    texto += '• ' + formatearFecha(s.fecha) + ' | ' + s.tipo + ' | ' + s.horaInicio + '–' + s.horaFin + ' | ' + s.horas + ' hrs | ' + formatearDinero(s.costo) + '\n';
+                });
+            } else {
+                texto += '🎤 Sin servicios en este periodo\n';
+            }
+
+            if (pagos.length) {
+                texto += '\n💵 PAGOS RECIBIDOS:\n';
+                pagos.forEach(p => {
+                    texto += '• ' + formatearFecha(p.fecha) + ' | ' + formatearDinero(p.monto) + (p.nota ? ' | ' + p.nota : '') + '\n';
+                });
+            }
+
+            texto += '\n💰 Total servicios del periodo: ' + formatearDinero(totalServicios);
+            texto += '\n💵 Pagos del periodo: ' + formatearDinero(totalPagos);
+
+            const hayPrevios = DATA_APP.servicios.some(s => s.fecha < desde) || DATA_APP.pagos.some(p => p.fecha < desde);
+            if (saldo > 0) {
+                texto += '\n🔴 SALDO PENDIENTE: ' + formatearDinero(saldo);
+                if (hayPrevios) texto += ' (incluye arrastre de semanas anteriores)';
+            } else if (saldo < 0) {
+                texto += '\n🔵 SALDO A FAVOR: ' + formatearDinero(Math.abs(saldo));
+            } else {
+                texto += '\n🟢 TODO LIQUIDADO · $0';
+            }
+
+            texto += '\n\nGenerado: ' + formatearFecha(hoyISO());
+            texto += '\nTOTAL FEST · Servicios Musicales';
+
+            return texto;
+        }
+
+        // 👀 Mostrar el reporte en pantalla
+        function renderReporte() {
+            document.getElementById('rp-preview').textContent = generarTextoReporte();
+        }
+
+        // 📋 Copiar el reporte para WhatsApp (textarea + execCommand = más compatible)
+        function copiarReporte() {
+            const texto = generarTextoReporte();
+            const ta = document.createElement('textarea');
+            ta.value = texto;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+                vibrar();
+                mostrarToast('📋 Copiado, pegalo en WhatsApp');
+            } catch (e) {
+                mostrarToast('⚠️ No se pudo copiar');
+            }
+            document.body.removeChild(ta);
+        }
+
+        // 🖨️ Generar PDF profesional imprimible
+        function generarPDF() {
+            const desde = document.getElementById('rp-desde').value;
+            const hasta = document.getElementById('rp-hasta').value;
+
+            const servicios = DATA_APP.servicios
+                .filter(s => (!desde || s.fecha >= desde) && (!hasta || s.fecha <= hasta))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
+            const pagos = DATA_APP.pagos
+                .filter(p => (!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+            const totalServicios = servicios.reduce((suma, s) => suma + s.costo, 0);
+            const totalPagos = pagos.reduce((suma, p) => suma + p.monto, 0);
+            const { saldo } = calcularTotales();
+            const saldoColor = saldo > 0 ? '#c62828' : '#2e7d32';
+
+            let filasServicios = '';
+            servicios.forEach((s, i) => {
+                filasServicios += '<tr><td>' + (i + 1) + '</td><td>' + formatearFecha(s.fecha) + '</td><td>' + s.tipo + '</td><td>' + s.horaInicio + ' – ' + s.horaFin + '</td><td style="text-align:center;">' + s.horas + '</td><td style="text-align:right;">' + formatearDinero(s.costo) + '</td></tr>';
+            });
+
+            let filasPagos = '';
+            pagos.forEach(p => {
+                filasPagos += '<tr><td>' + formatearFecha(p.fecha) + '</td><td>' + (p.nota || '—') + '</td><td style="text-align:right;">' + formatearDinero(p.monto) + '</td></tr>';
+            });
+
+            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte — TOTAL FEST</title><style>' +
+                "* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }" +
+                'body { padding: 40px; color: #1a2332; }' +
+                '.header { border-bottom: 3px solid #8e24aa; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }' +
+                '.marca h1 { color: #8e24aa; font-size: 22px; }' +
+                '.marca p { color: #555; font-size: 13px; }' +
+                '.meta { text-align: right; font-size: 13px; color: #555; }' +
+                '.cliente { background: #f5f7fa; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height: 1.6; }' +
+                'h2 { font-size: 15px; color: #1976d2; margin: 20px 0 8px; text-transform: uppercase; }' +
+                'table { width: 100%; border-collapse: collapse; font-size: 13px; }' +
+                'th { background: #0a1929; color: #fff; padding: 8px 10px; text-align: left; }' +
+                'td { padding: 8px 10px; border-bottom: 1px solid #e0e6ed; }' +
+                '.totales { margin-top: 24px; background: #f5f7fa; border-radius: 8px; padding: 18px; max-width: 360px; margin-left: auto; font-size: 14px; }' +
+                '.totales div { display: flex; justify-content: space-between; padding: 4px 0; }' +
+                '.saldo-final { border-top: 2px solid #0a1929; margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 16px; color: ' + saldoColor + '; }' +
+                '.firmas { display: flex; justify-content: space-around; margin-top: 70px; }' +
+                '.firma { text-align: center; font-size: 13px; color: #555; }' +
+                '.firma .linea { width: 200px; border-top: 1px solid #333; margin-bottom: 6px; }' +
+                '.pie { margin-top: 40px; text-align: center; font-size: 11px; color: #999; }' +
+                '@media print { body { padding: 20px; } }' +
+                '</style></head><body>' +
+                '<div class="header"><div class="marca"><h1>🎤 KARAOKE SAO · TOTAL FEST</h1><p>Servicios Musicales</p></div>' +
+                '<div class="meta"><b>REPORTE DE SERVICIOS</b><br>Periodo: ' + (desde ? formatearFecha(desde) : 'inicio') + ' – ' + (hasta ? formatearFecha(hasta) : 'hoy') + '<br>Generado: ' + formatearFecha(hoyISO()) + '</div></div>' +
+                '<div class="cliente"><b>Cliente:</b> LA CHALUPA LERMA<br><b>At\'n:</b> Jesus Arias Velazco</div>' +
+                '<h2>🎤 Detalle de servicios</h2><table><tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Hrs</th><th style="text-align:right;">Costo</th></tr>' +
+                (filasServicios || '<tr><td colspan="6" style="text-align:center; color:#999;">Sin servicios en este periodo</td></tr>') + '</table>' +
+                '<h2>💵 Pagos recibidos</h2><table><tr><th>Fecha</th><th>Nota</th><th style="text-align:right;">Monto</th></tr>' +
+                (filasPagos || '<tr><td colspan="3" style="text-align:center; color:#999;">Sin pagos en este periodo</td></tr>') + '</table>' +
+                '<div class="totales"><div><span>Total servicios:</span><b>' + formatearDinero(totalServicios) + '</b></div>' +
+                '<div><span>Pagos recibidos:</span><b>' + formatearDinero(totalPagos) + '</b></div>' +
+                '<div class="saldo-final"><span>' + (saldo > 0 ? 'SALDO PENDIENTE:' : (saldo < 0 ? 'SALDO A FAVOR:' : 'ESTADO:')) + '</span><span>' + (saldo > 0 ? formatearDinero(saldo) : (saldo < 0 ? formatearDinero(Math.abs(saldo)) : 'LIQUIDADO ✅')) + '</span></div></div>' +
+                '<div class="firmas"><div class="firma"><div class="linea"></div>Jesús Arias Velazco<br>LA CHALUPA LERMA</div>' +
+                '<div class="firma"><div class="linea"></div>Karaoke SAO<br>TOTAL FEST</div></div>' +
+                '<div class="pie">Documento generado por SAO Control · TOTAL FEST · ' + formatearFecha(hoyISO()) + '</div>' +
+                '<script>window.onload = function() { window.print(); }<\/script>' +
+                '</body></html>';
+
+            const ventana = window.open('', '_blank');
+            if (!ventana) {
+                mostrarToast('⚠️ Permití ventanas emergentes');
+                return;
+            }
+            ventana.document.write(html);
+            ventana.document.close();
+        }
+
+        // 🎬 Preparar la pantalla de reporte al entrar
+        function prepararFormReporte() {
+            const fechas = [
+                ...DATA_APP.servicios.map(s => s.fecha),
+                ...DATA_APP.pagos.map(p => p.fecha)
+            ].sort();
+            document.getElementById('rp-desde').value = fechas.length ? fechas[0] : hoyISO();
+            document.getElementById('rp-hasta').value = hoyISO();
+            renderReporte();
         }       
         // 🚀 ARRANQUE
         cargarDatos();
@@ -754,7 +947,8 @@
             // 🎬 Preparar formularios y refrescar pantallas al entrar
             if (nombre === 'servicio' && typeof prepararFormServicio === 'function') prepararFormServicio();
             if (nombre === 'pago' && typeof prepararFormPago === 'function') prepararFormPago();
-            if (nombre === 'historial' && typeof renderHistorial === 'function') renderHistorial();            
+            if (nombre === 'historial' && typeof renderHistorial === 'function') renderHistorial(); 
+            if (nombre === 'reporte' && typeof prepararFormReporte === 'function') prepararFormReporte();            
             if (nombre === 'home' && typeof renderHome === 'function') renderHome();
         }
     </script>
