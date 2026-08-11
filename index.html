@@ -305,6 +305,44 @@
         </div>
     </div>
 
+     <!-- 💸 PANTALLA: EXTRA (préstamos y compras) -->
+    <div id="pantalla-extra" class="pantalla">
+        <div class="card">
+            <h2 style="color: var(--azul-claro); margin-bottom: 8px;">💸 Cargo Extra</h2>
+            <p style="color: var(--gris); font-size: 0.85em; margin-bottom: 16px;">Préstamos de cambio y compras que Jesús te queda a deber.</p>
+
+            <div class="form-grupo">
+                <label class="form-label">📅 Fecha</label>
+                <input type="date" id="ex-fecha" class="form-input">
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">🎯 Tipo</label>
+                <select id="ex-tipo" class="form-select">
+                    <option value="Préstamo">💸 Préstamo (cambio / evento)</option>
+                    <option value="Compra">🛒 Compra (Mercado Libre, Amazon...)</option>
+                </select>
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">📝 ¿Qué fue? (concepto)</label>
+                <input type="text" id="ex-concepto" class="form-input" placeholder="Ej: cambio del evento, audífonos Amazon...">
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">💰 Monto ($)</label>
+                <input type="number" id="ex-monto" class="form-input monto-grande" min="0" inputmode="numeric" placeholder="0">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button class="chip" onclick="setMontoExtra(100)">$100</button>
+                <button class="chip" onclick="setMontoExtra(200)">$200</button>
+                <button class="chip" onclick="setMontoExtra(500)">$500</button>
+            </div>
+
+            <button class="btn-guardar" style="background: linear-gradient(135deg, #f57c00, #e65100);" onclick="guardarExtra()">💾 GUARDAR CARGO EXTRA</button>
+        </div>
+    </div>   
     <!-- 💵 PANTALLA: PAGO -->
     <div id="pantalla-pago" class="pantalla">
         <div class="card">
@@ -390,6 +428,9 @@
         <button class="nav-btn" onclick="irA('servicio', this)">
             <span class="nav-icono">🎤</span>Servicio
         </button>
+          <button class="nav-btn" onclick="irA('extra', this)">
+            <span class="nav-icono">💸</span>Extra
+        </button>      
         <button class="nav-btn" onclick="irA('pago', this)">
             <span class="nav-icono">💵</span>Pago
         </button>
@@ -406,7 +447,8 @@
         // 📦 EL CUADERNO: aquí viven tus servicios y pagos
         let DATA_APP = {
             servicios: [],  // cada uno: { id, fecha, tipo, horaInicio, horaFin, horas, costo }
-            pagos: []       // cada uno: { id, fecha, monto }
+            pagos: [],      // cada uno: { id, fecha, monto, nota }
+            extras: []      // cada uno: { id, fecha, tipo, concepto, monto } 💸🛒
         };
 
         // 💾 LEER del estante (localStorage)
@@ -416,6 +458,8 @@
                 try { DATA_APP = JSON.parse(guardado); }
                 catch (e) { console.log('Datos ilegibles, empezamos de cero'); }
             }
+            // 🩹 Migración: si tus datos viejos no tienen "extras", lo creamos vacío
+            if (!DATA_APP.extras) DATA_APP.extras = [];
         }
 
         // 💾 GUARDAR en el estante
@@ -547,7 +591,7 @@
 
         // 🧭 Ir a una pantalla desde un botón fuera de la barra
         function irADesde(nombre) {
-            const mapa = { home: 0, servicio: 1, pago: 2, historial: 3, reporte: 4 };
+            const mapa = { home: 0, servicio: 1, extra: 2, pago: 3, historial: 4, reporte: 5 };
             irA(nombre, document.querySelectorAll('.nav-btn')[mapa[nombre]]);
         }
         
@@ -958,6 +1002,44 @@
             document.getElementById('sv-fin').value = valor;
             actualizarHoras();
         }
+
+        // 💸 Poner un monto rápido (chips de cargo extra)
+        function setMontoExtra(valor) {
+            document.getElementById('ex-monto').value = valor;
+        }
+
+        // 💾 Guardar un cargo extra (préstamo o compra)
+        function guardarExtra() {
+            const fecha = document.getElementById('ex-fecha').value;
+            const tipo = document.getElementById('ex-tipo').value;
+            const concepto = document.getElementById('ex-concepto').value.trim();
+            const monto = parseFloat(document.getElementById('ex-monto').value);
+
+            if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
+            if (!concepto) { mostrarToast('⚠️ Escribí el concepto (qué fue)'); return; }
+            if (!monto || monto <= 0) { mostrarToast('⚠️ Poné el monto'); return; }
+
+            DATA_APP.extras.push({
+                id: Date.now(),
+                fecha: fecha,
+                tipo: tipo,
+                concepto: concepto,
+                monto: monto
+            });
+            guardarDatos();
+            sonarDing();
+            vibrar();
+            mostrarToast('✅ Cargo extra guardado');
+            renderHome();
+            setTimeout(() => irADesde('home'), 1000);
+        }
+
+        // 🎬 Preparar el formulario extra al entrar
+        function prepararFormExtra() {
+            document.getElementById('ex-fecha').value = hoyISO();
+            document.getElementById('ex-concepto').value = '';
+            document.getElementById('ex-monto').value = '';
+        }        
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
@@ -976,6 +1058,7 @@
             window.scrollTo(0, 0);
             // 🎬 Preparar formularios y refrescar pantallas al entrar
             if (nombre === 'servicio' && typeof prepararFormServicio === 'function') prepararFormServicio();
+            if (nombre === 'extra' && typeof prepararFormExtra === 'function') prepararFormExtra();          
             if (nombre === 'pago' && typeof prepararFormPago === 'function') prepararFormPago();
             if (nombre === 'historial' && typeof renderHistorial === 'function') renderHistorial(); 
             if (nombre === 'reporte' && typeof prepararFormReporte === 'function') prepararFormReporte();            
