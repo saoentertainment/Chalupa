@@ -272,7 +272,7 @@
             <div style="display: flex; gap: 12px;">
                 <div class="form-grupo" style="flex: 1;">
                     <label class="form-label">🌇 Inicio</label>
-                    <input type="time" id="sv-inicio" class="form-input" value="20:00" onchange="actualizarHoras()">
+                    <input type="time" id="sv-inicio" class="form-input" value="20:00" oninput="actualizarHoras()" onchange="actualizarHoras()">
                     <div style="display: flex; gap: 6px; margin-top: 8px;">
                         <button class="chip chip-mini" onclick="setInicio('19:00')">19:00</button>
                         <button class="chip chip-mini" onclick="setInicio('20:00')">20:00</button>
@@ -281,7 +281,7 @@
                 </div>
                 <div class="form-grupo" style="flex: 1;">
                     <label class="form-label">🌙 Fin</label>
-                    <input type="time" id="sv-fin" class="form-input" value="01:00" onchange="actualizarHoras()">
+                    <input type="time" id="sv-fin" class="form-input" value="01:00" oninput="actualizarHoras()" onchange="actualizarHoras()">
                     <div style="display: flex; gap: 6px; margin-top: 8px;">
                         <button class="chip chip-mini" onclick="setFin('01:00')">01:00</button>
                         <button class="chip chip-mini" onclick="setFin('02:00')">02:00 ⭐</button>
@@ -289,7 +289,12 @@
                     </div>
                 </div>
             </div>
-            <p style="color: var(--gris); font-size: 0.78em; margin-bottom: 12px;">⭐ = hora extra. También podés tocar el reloj y escribir el horario que quieras (el que sea). ⏰</p>
+
+            <div class="form-grupo" style="margin-top: 4px;">
+                <label class="form-label">✍️ ¿O escribí las horas directamente?</label>
+                <input type="number" id="sv-horas-manual" class="form-input" min="0.5" max="23" step="0.5" inputmode="decimal" placeholder="Ej: 6" oninput="setHorasDirectas(this.value)">
+                <p style="color: var(--gris); font-size: 0.78em; margin-top: 6px;">Escribí las horas (ej: 6) y la hora fin se ajusta sola desde la hora inicio. ⏱️</p>
+            </div>
 
             <div style="background: rgba(142, 36, 170, 0.15); border: 1px solid var(--morado); border-radius: 12px; padding: 12px; text-align: center;">
                 <p style="color: var(--gris); font-size: 0.85em;">⏱️ Horas trabajadas</p>
@@ -303,7 +308,7 @@
 
             <button class="btn-guardar" onclick="guardarServicio()">💾 GUARDAR SERVICIO</button>
         </div>
-    </div>
+    </div>>
 
      <!-- 💸 PANTALLA: EXTRA (préstamos y compras) -->
     <div id="pantalla-extra" class="pantalla">
@@ -1039,7 +1044,19 @@
             document.getElementById('ex-fecha').value = hoyISO();
             document.getElementById('ex-concepto').value = '';
             document.getElementById('ex-monto').value = '';
-        }        
+        }
+         // ✍️ Escribir las horas directamente (la hora fin se ajusta sola)
+        function setHorasDirectas(valor) {
+            const horas = parseFloat(valor);
+            if (!horas || horas <= 0 || horas >= 24) return;
+            const inicio = document.getElementById('sv-inicio').value || '20:00';
+            const [hi, mi] = inicio.split(':').map(Number);
+            const totalMin = (hi * 60 + mi + Math.round(horas * 60)) % (24 * 60);
+            const hf = Math.floor(totalMin / 60);
+            const mf = totalMin % 60;
+            document.getElementById('sv-fin').value = String(hf).padStart(2, '0') + ':' + String(mf).padStart(2, '0');
+            actualizarHoras();
+        }       
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
