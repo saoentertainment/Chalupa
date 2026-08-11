@@ -872,7 +872,7 @@
                 }, 3000);
             }
         }
-         // 📄 Generar el texto del reporte (para WhatsApp y vista previa)
+        // 📄 Generar el texto del reporte (para WhatsApp y vista previa)
         function generarTextoReporte() {
             const desde = document.getElementById('rp-desde').value;
             const hasta = document.getElementById('rp-hasta').value;
@@ -880,11 +880,15 @@
             const servicios = DATA_APP.servicios
                 .filter(s => (!desde || s.fecha >= desde) && (!hasta || s.fecha <= hasta))
                 .sort((a, b) => a.fecha.localeCompare(b.fecha));
+            const extras = DATA_APP.extras
+                .filter(x => (!desde || x.fecha >= desde) && (!hasta || x.fecha <= hasta))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
             const pagos = DATA_APP.pagos
                 .filter(p => (!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta))
                 .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
             const totalServicios = servicios.reduce((suma, s) => suma + s.costo, 0);
+            const totalExtras = extras.reduce((suma, x) => suma + x.monto, 0);
             const totalPagos = pagos.reduce((suma, p) => suma + p.monto, 0);
             const { saldo } = calcularTotales(); // acumulado TOTAL
 
@@ -904,6 +908,14 @@
                 texto += '🎤 Sin servicios en este periodo\n';
             }
 
+            if (extras.length) {
+                texto += '\n💸 PRÉSTAMOS Y COMPRAS:\n';
+                extras.forEach(x => {
+                    const icono = x.tipo === 'Compra' ? '🛒' : '💸';
+                    texto += '• ' + icono + ' ' + formatearFecha(x.fecha) + ' | ' + x.tipo + ' | ' + x.concepto + ' | ' + formatearDinero(x.monto) + '\n';
+                });
+            }
+
             if (pagos.length) {
                 texto += '\n💵 PAGOS RECIBIDOS:\n';
                 pagos.forEach(p => {
@@ -912,9 +924,10 @@
             }
 
             texto += '\n💰 Total servicios del periodo: ' + formatearDinero(totalServicios);
+            texto += '\n💸 Préstamos y compras del periodo: ' + formatearDinero(totalExtras);
             texto += '\n💵 Pagos del periodo: ' + formatearDinero(totalPagos);
 
-            const hayPrevios = DATA_APP.servicios.some(s => s.fecha < desde) || DATA_APP.pagos.some(p => p.fecha < desde);
+            const hayPrevios = DATA_APP.servicios.some(s => s.fecha < desde) || DATA_APP.pagos.some(p => p.fecha < desde) || DATA_APP.extras.some(x => x.fecha < desde);
             if (saldo > 0) {
                 texto += '\n🔴 SALDO PENDIENTE: ' + formatearDinero(saldo);
                 if (hayPrevios) texto += ' (incluye arrastre de semanas anteriores)';
@@ -963,11 +976,15 @@
             const servicios = DATA_APP.servicios
                 .filter(s => (!desde || s.fecha >= desde) && (!hasta || s.fecha <= hasta))
                 .sort((a, b) => a.fecha.localeCompare(b.fecha));
+            const extras = DATA_APP.extras
+                .filter(x => (!desde || x.fecha >= desde) && (!hasta || x.fecha <= hasta))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha));
             const pagos = DATA_APP.pagos
                 .filter(p => (!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta))
                 .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
             const totalServicios = servicios.reduce((suma, s) => suma + s.costo, 0);
+            const totalExtras = extras.reduce((suma, x) => suma + x.monto, 0);
             const totalPagos = pagos.reduce((suma, p) => suma + p.monto, 0);
             const { saldo } = calcularTotales();
             const saldoColor = saldo > 0 ? '#c62828' : '#2e7d32';
@@ -975,6 +992,12 @@
             let filasServicios = '';
             servicios.forEach((s, i) => {
                 filasServicios += '<tr><td>' + (i + 1) + '</td><td>' + formatearFecha(s.fecha) + '</td><td>' + s.tipo + '</td><td>' + s.horaInicio + ' – ' + s.horaFin + '</td><td style="text-align:center;">' + s.horas + '</td><td style="text-align:right;">' + formatearDinero(s.costo) + '</td></tr>';
+            });
+
+            let filasExtras = '';
+            extras.forEach((x, i) => {
+                const icono = x.tipo === 'Compra' ? '🛒' : '💸';
+                filasExtras += '<tr><td>' + (i + 1) + '</td><td>' + formatearFecha(x.fecha) + '</td><td>' + icono + ' ' + x.tipo + '</td><td>' + x.concepto + '</td><td style="text-align:right;">' + formatearDinero(x.monto) + '</td></tr>';
             });
 
             let filasPagos = '';
@@ -994,7 +1017,7 @@
                 'table { width: 100%; border-collapse: collapse; font-size: 13px; }' +
                 'th { background: #0a1929; color: #fff; padding: 8px 10px; text-align: left; }' +
                 'td { padding: 8px 10px; border-bottom: 1px solid #e0e6ed; }' +
-                '.totales { margin-top: 24px; background: #f5f7fa; border-radius: 8px; padding: 18px; max-width: 360px; margin-left: auto; font-size: 14px; }' +
+                '.totales { margin-top: 24px; background: #f5f7fa; border-radius: 8px; padding: 18px; max-width: 380px; margin-left: auto; font-size: 14px; }' +
                 '.totales div { display: flex; justify-content: space-between; padding: 4px 0; }' +
                 '.saldo-final { border-top: 2px solid #0a1929; margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 16px; color: ' + saldoColor + '; }' +
                 '.firmas { display: flex; justify-content: space-around; margin-top: 70px; }' +
@@ -1008,9 +1031,12 @@
                 '<div class="cliente"><b>Cliente:</b> LA CHALUPA LERMA<br><b>At\'n:</b> Jesus Arias Velazco</div>' +
                 '<h2>🎤 Detalle de servicios</h2><table><tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Hrs</th><th style="text-align:right;">Costo</th></tr>' +
                 (filasServicios || '<tr><td colspan="6" style="text-align:center; color:#999;">Sin servicios en este periodo</td></tr>') + '</table>' +
+                '<h2>💸 Préstamos y compras</h2><table><tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Concepto</th><th style="text-align:right;">Monto</th></tr>' +
+                (filasExtras || '<tr><td colspan="5" style="text-align:center; color:#999;">Sin préstamos ni compras en este periodo</td></tr>') + '</table>' +
                 '<h2>💵 Pagos recibidos</h2><table><tr><th>Fecha</th><th>Nota</th><th style="text-align:right;">Monto</th></tr>' +
                 (filasPagos || '<tr><td colspan="3" style="text-align:center; color:#999;">Sin pagos en este periodo</td></tr>') + '</table>' +
                 '<div class="totales"><div><span>Total servicios:</span><b>' + formatearDinero(totalServicios) + '</b></div>' +
+                '<div><span>Préstamos y compras:</span><b>' + formatearDinero(totalExtras) + '</b></div>' +
                 '<div><span>Pagos recibidos:</span><b>' + formatearDinero(totalPagos) + '</b></div>' +
                 '<div class="saldo-final"><span>' + (saldo > 0 ? 'SALDO PENDIENTE:' : (saldo < 0 ? 'SALDO A FAVOR:' : 'ESTADO:')) + '</span><span>' + (saldo > 0 ? formatearDinero(saldo) : (saldo < 0 ? formatearDinero(Math.abs(saldo)) : 'LIQUIDADO ✅')) + '</span></div></div>' +
                 '<div class="firmas"><div class="firma"><div class="linea"></div>Jesús Arias Velazco<br>LA CHALUPA LERMA</div>' +
