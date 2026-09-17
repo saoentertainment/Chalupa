@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Contexto v2.0: SAO Control · La Chalupa</title>
+    <style>
+        :root {
+            --fondo: #0a1929;
+            --card: #132f4c;
+            --azul: #1976d2;
+            --azul-claro: #64b5f6;
+            --morado: #8e24aa;
+            --verde: #4caf50;
+            --amarillo: #ffca28;
+            --rojo: #ef5350;
+            --gris: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--fondo);
+            color: #fff;
+            padding: 20px;
+            line-height: 1.7;
+        }
+        .contenedor { max-width: 860px; margin: 0 auto; }
+        header {
+            background: linear-gradient(135deg, var(--morado), #4a148c);
+            border-radius: 16px;
+            padding: 28px 20px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        header h1 { font-size: 1.6em; }
+        header p { color: rgba(255,255,255,0.85); font-size: 0.95em; margin-top: 6px; }
+        h2 {
+            color: var(--azul-claro);
+            margin: 32px 0 12px;
+            font-size: 1.25em;
+            border-bottom: 2px solid rgba(100,181,246,0.25);
+            padding-bottom: 6px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92em; }
+        th { background: rgba(25,118,210,0.25); color: var(--azul-claro); text-align: left; }
+        th, td { padding: 8px 12px; border: 1px solid rgba(100,181,246,0.2); vertical-align: top; }
+        code {
+            background: rgba(10,25,41,0.8);
+            color: var(--amarillo);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        ul { padding-left: 22px; margin: 8px 0; }
+        li { margin: 4px 0; }
+        .nota { color: var(--gris); font-size: 0.88em; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .badge-listo { background: rgba(76,175,80,0.2); color: var(--verde); border: 1px solid var(--verde); }
+        .badge-idea { background: rgba(148,163,184,0.15); color: var(--gris); border: 1px solid var(--gris); }
+        .badge-caso { background: rgba(239,83,80,0.15); color: var(--rojo); border: 1px solid var(--rojo); }
+        footer {
+            text-align: center;
+            color: var(--gris);
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 0.9em;
+            border-top: 1px solid rgba(100,181,246,0.2);
+        }
+    </style>
+</head>
+<body>
+<div class="contenedor">
+
+    <header>
+        <h1>🎤 SAO Control · La Chalupa</h1>
+        <p>Control de servicios musicales para LA CHALUPA LERMA · Contexto v2.0 · Actualizado el 18 de Septiembre de 2026</p>
+    </header>
+
+    <h2>📋 ¿Qué es?</h2>
+    <div class="card">
+        <p>Una PWA single-file de uso personal para que <b>Javi SAO</b> lleve el control de los servicios musicales que brinda en el restaurante <b>LA CHALUPA LERMA</b> (responsable: <b>Jesus Arias Velazco</b>). Registra servicios con horas reales, pagos con método (efectivo/transferencia/depósito), préstamos y compras, y calcula el <b>saldo pendiente acumulado global</b>. Genera reportes para el cliente: copiables a WhatsApp 📲 y <b>PDF estilo Estado de Cuenta</b> cronológico con saldo corrido 📊.</p>
+    </div>
+
+    <h2>💼 Datos del negocio</h2>
+    <table>
+        <tr><th>Mi servicio</th><td>Karaoke SAO 🎤 · Empresa: TOTAL FEST 🎶</td></tr>
+        <tr><th>Cliente</th><td>LA CHALUPA LERMA 🌮</td></tr>
+        <tr><th>Responsable</th><td>Jesus Arias Velazco</td></tr>
+        <tr><th>Tarifa real</th><td><b>$1,200 por sesión</b> (6–7 hrs, 20:00 → 02:00/03:00). El costo es EDITABLE por servicio (el default histórico era $1,100/5hrs).</td></tr>
+        <tr><th>Horarios</th><td>Libres: puede empezar antes o terminar después (horas extra ⭐). Horas auto-calculadas, cruzan medianoche 🌙. Modo directo: escribir las horas ✍️.</td></tr>
+        <tr><th>Forma de cobro</th><td>Semanal, con abonos parciales. El saldo SE ACUMULA hasta liquidarse. Los pagos cubren primero lo más viejo (cascada FIFO).</td></tr>
+        <tr><th>Snapshot 18/Sep/2026</th><td>Saldo pendiente: <b>$2,230</b> (Karaoke 11/Sep resta $1,030 🟡 + Karaoke 15/Sep resta $1,200 🔴)</td></tr>
+    </table>
+
+    <h2>🛠️ Stack Tecnológico</h2>
+    <div class="card">
+        <ul>
+            <li>HTML5 + CSS3 (variables) + JavaScript Vanilla</li>
+            <li>Sin frameworks. Todo en un solo <code>index.html</code></li>
+            <li>Sin backend. Datos en <code>localStorage</code> (local al dispositivo)</li>
+            <li>Service Worker + PWA Manifest</li>
+            <li>Hosting: GitHub Pages (gratis)</li>
+        </ul>
+    </div>
+
+    <h2>📁 Estructura de Archivos</h2>
+    <div class="card">
+        <code>📁 Chalupa/</code>
+        <ul>
+            <li><code>index.html</code> → App completa (HTML + CSS + JS)</li>
+            <li><code>manifest.json</code> → Configuración PWA</li>
+            <li><code>sw.js</code> → Service Worker (NETWORK-FIRST 🌐)</li>
+            <li><code>favicon.ico</code> → Ícono de pestaña (favicon.io)</li>
+            <li><code>apple-touch-icon.png</code> → Ícono para iPhone</li>
+            <li><code>android-chrome-192x192.png</code> → Ícono PWA chico</li>
+            <li><code>android-chrome-512x512.png</code> → Ícono PWA grande + og:image de WhatsApp</li>
+            <li><code>icon.svg</code> → Micrófono vectorial (original, quedó de respaldo)</li>
+            <li><code>Chalupa_Contexto.html</code> → Este documento 📋</li>
+            <li><code>.nojekyll</code> → Evita procesamiento de GitHub Pages</li>
+        </ul>
+    </div>
+
+    <h2>🎨 Paleta de Colores "TOTAL FEST"</h2>
+    <table>
+        <tr><th>Color</th><th>Hex</th><th>Uso</th></tr>
+        <tr><td>Fondo</td><td><code>#0a1929</code></td><td>Background principal</td></tr>
+        <tr><td>Card</td><td><code>#132f4c</code></td><td>Tarjetas y secciones</td></tr>
+        <tr><td>Azul</td><td><code>#1976d2</code></td><td>Botones secundarios</td></tr>
+        <tr><td>Azul claro</td><td><code>#64b5f6</code></td><td>Títulos, acentos</td></tr>
+        <tr><td>Morado</td><td><code>#8e24aa</code></td><td>Registrar Servicio, branding PDF</td></tr>
+        <tr><td>Verde</td><td><code>#4caf50</code></td><td>Pagos, LIQUIDADO 🟢, guardar</td></tr>
+        <tr><td>Amarillo</td><td><code>#ffca28</code></td><td>PARCIAL 🟡</td></tr>
+        <tr><td>Rojo</td><td><code>#ef5350</code></td><td>PENDIENTE 🔴, borrar</td></tr>
+        <tr><td>Naranja</td><td><code>#f57c00 / #ffb74d</code></td><td>Cargos Extra 💸 (botón y montos)</td></tr>
+    </table>
+
+    <h2>📱 Pantallas (6)</h2>
+    <table>
+        <tr><th>Pantalla</th><th>Función</th></tr>
+        <tr><td>🏠 Inicio</td><td>Saldo pendiente GIGANTE + resumen (Servicios/Extras/Pagos) + botones rápidos + tarjeta 📦 Respaldo + créditos 💜</td></tr>
+        <tr><td>🎤 Servicio</td><td>Fecha, tipo (Karaoke/Música en Vivo/Evento Especial), horarios con chips + horas directas ✍️, horas auto-calculadas, costo editable</td></tr>
+        <tr><td>💸 Extra</td><td>Préstamos (cambio/evento) y Compras (Mercado Libre/Amazon): fecha, tipo, concepto, monto con chips</td></tr>
+        <tr><td>💵 Pago</td><td>Fecha, monto con chips, <b>método (💵 Efectivo / 📲 Transferencia / 🏦 Depósito)</b>, nota + vista previa EN VIVO del saldo</td></tr>
+        <tr><td>📋 Historial</td><td>Todos los movimientos por fecha + semáforo 🚦 por cargo + método en pagos + borrar con doble toque</td></tr>
+        <tr><td>📄 Reporte</td><td>Periodo desde/hasta + vista previa + copiar WhatsApp + PDF Estado de Cuenta 📊</td></tr>
+    </table>
+
+    <h2>🚦 Semáforo de Estado (por cargo)</h2>
+    <table>
+        <tr><th>Estado</th><th>Significado</th></tr>
+        <tr><td>🔴 PENDIENTE</td><td>No se pagó nada de ese cargo</td></tr>
+        <tr><td>🟡 PARCIAL</td><td>Se abonó algo pero falta (muestra "Resta: $X")</td></tr>
+        <tr><td>🟢 LIQUIDADO</td><td>Pagado completo</td></tr>
+    </table>
+    <p class="nota">🧠 Regla de oro: los pagos cubren primero los cargos más viejos (<code>calcularEstados()</code> con servicios+extras unificados). Saldo global = Servicios + Extras − Pagos.</p>
+
+    <h2>🧠 Modelo de Datos</h2>
+    <div class="card">
+        <p>Todo vive en <code>DATA_APP</code>, guardado en <code>localStorage</code> con clave <code>'saoChalupaData'</code>:</p>
+        <table>
+            <tr><th>Array</th><th>Estructura de cada item</th></tr>
+            <tr><td><code>servicios[]</code></td><td><code>{ id, fecha, tipo, horaInicio, horaFin, horas, costo }</code></td></tr>
+            <tr><td><code>pagos[]</code></td><td><code>{ id, fecha, monto, nota, metodo }</code> 💳</td></tr>
+            <tr><td><code>extras[]</code></td><td><code>{ id, fecha, tipo, concepto, monto }</code> 💸🛒</td></tr>
+        </table>
+        <p class="nota">💡 El saldo NO se guarda: se calcula en vivo. Migración automática en <code>cargarDatos()</code>: si faltan <code>extras</code> o <code>metodo</code> en datos viejos, se crean vacíos. Clave extra: <code>'saoUltimoRespaldo'</code> (fecha del último respaldo).</p>
+    </div>
+
+    <h2>🗺️ Mapa de Funciones</h2>
+    <table>
+        <tr><th>Función</th><th>Qué hace</th></tr>
+        <tr><td><code>cargarDatos / guardarDatos</code></td><td>Leer/escribir localStorage + migraciones 🩹</td></tr>
+        <tr><td><code>calcularTotales</code></td><td>Totales GLOBAL: servicios + extras − pagos</td></tr>
+        <tr><td><code>calcularEstados</code></td><td>Cascada FIFO sobre cargos unificados (servicios+extras)</td></tr>
+        <tr><td><code>calcularHoras</code></td><td>Horas entre inicio y fin (cruza medianoche 🌙)</td></tr>
+        <tr><td><code>formatearDinero / formatearFecha / formatearFechaCorta / hoyISO</code></td><td>Formatos ($1,200 / Jueves 06/Ago / 06/Ago / hoy)</td></tr>
+        <tr><td><code>esFechaFutura</code></td><td>Guardia 🛡️ anti-fechas futuras (toast y frena el guardado)</td></tr>
+        <tr><td><code>sonarDing / vibrar / mostrarToast</code></td><td>Feedback sensorial</td></tr>
+        <tr><td><code>renderHome</code></td><td>HOME: saldo gigante + resumen + tarjeta 📦 Respaldo + créditos</td></tr>
+        <tr><td><code>renderHistorial</code></td><td>Timeline con semáforos y método de pago</td></tr>
+        <tr><td><code>generarTextoReporte / renderReporte / copiarReporte</code></td><td>Reporte WhatsApp con método + desglose por método</td></tr>
+        <tr><td><code>generarPDF</code></td><td>📊 ESTADO DE CUENTA cronológico: Fecha · Concepto · Método · Cargo · Abono · Saldo corrido</td></tr>
+        <tr><td><code>guardarServicio / guardarPago / guardarExtra</code></td><td>Guardados con validaciones + guardia 🛡️</td></tr>
+        <tr><td><code>prepararFormServicio / Pago / Extra / Reporte</code></td><td>Preparan formularios al entrar a cada pantalla</td></tr>
+        <tr><td><code>setInicio / setFin / setHorasDirectas / setMonto / setMontoExtra</code></td><td>Atajos de chips y horas directas ✍️</td></tr>
+        <tr><td><code>previsualizarPago</code></td><td>Vista previa EN VIVO del saldo resultante</td></tr>
+        <tr><td><code>confirmarBorrar</code></td><td>Doble toque para borrar (servicio/extra/pago)</td></tr>
+        <tr><td><code>exportarRespaldo / leerRespaldo / restaurarRespaldo / cancelarRespaldo</code></td><td>📦 Respaldo JSON con confirmación segura</td></tr>
+        <tr><td><code>irA / irADesde</code></td><td>Navegación entre las 6 pantallas</td></tr>
+    </table>
+
+    <h2>⚙️ Funcionalidades Implementadas</h2>
+    <div class="card">
+        <p><span class="badge badge-listo">v1.0</span></p>
+        <ul>
+            <li>Saldo pendiente acumulado global (el objetivo principal 🎯)</li>
+            <li>Semáforo 🚦 por servicio + historial cronológico</li>
+            <li>Horarios libres + horas extra ⭐ + horas directas ✍️</li>
+            <li>Reporte WhatsApp + PDF profesional con firmas ✍️</li>
+            <li>PWA instalable + offline + íconos favicon.io + preview WhatsApp</li>
+            <li>Borrado con doble confirmación + toasts (sin alerts)</li>
+        </ul>
+        <p><span class="badge badge-listo">v2.0</span></p>
+        <ul>
+            <li>💸 Cargos Extra: préstamos y compras integrados al saldo global</li>
+            <li>💳 Método de pago (Efectivo / Transferencia / Depósito) en formulario, historial y reportes</li>
+            <li>📊 PDF Estado de Cuenta cronológico con saldo corrido y filas de pago sombreadas</li>
+            <li>💳 Desglose de pagos por método en el reporte WhatsApp</li>
+            <li>🛡️ Guardia de fechas futuras (anti-fantasmas 👻)</li>
+            <li>📦 Respaldo Exportar/Importar con confirmación de restauración</li>
+        </ul>
+    </div>
+
+    <h2>📄 PDF Estado de Cuenta (formato v2.0)</h2>
+    <div class="card">
+        <ul>
+            <li>Encabezado: marca TOTAL FEST + periodo + fecha de generación</li>
+            <li>Bloque cliente: LA CHALUPA LERMA · Jesus Arias Velazco</li>
+            <li>📊 RESUMEN: Total Cargos · Total Abonos · 🔴 SALDO PENDIENTE ACTUAL</li>
+            <li>📑 Tabla cronológica: <b>Fecha | Concepto | Método | Cargo | Abono | Saldo corrido</b></li>
+            <li>Fila inicial "📌 Saldo anterior arrastrado" si hay movimientos previos al periodo</li>
+            <li>Filas de pago sombreadas en verde clarito para lectura fácil</li>
+            <li>Saldo corrido en rojo (debe) / verde (liquidado)</li>
+            <li>Firmas: Jesús Arias Velazco · Karaoke SAO TOTAL FEST</li>
+        </ul>
+    </div>
+
+    <h2>📦 Sistema de Respaldo</h2>
+    <div class="card">
+        <ul>
+            <li>⬇️ <b>Exportar:</b> descarga <code>respaldo-sao-chalupa-YYYY-MM-DD.json</code> con TODO (Blob + a[download]) y registra la fecha en <code>'saoUltimoRespaldo'</code></li>
+            <li>⬆️ <b>Importar:</b> input file oculto → FileReader → valida formato → muestra caja de confirmación con conteos → ✅ RESTAURAR reemplaza DATA_APP (con migraciones) o ❌ Cancelar</li>
+            <li>🏠 La tarjeta del HOME muestra "Último respaldo: fecha" o "⚠️ Todavía no hiciste ningún respaldo"</li>
+        </ul>
+    </div>
+
+    <h2>📲 PWA - Detalles</h2>
+    <div class="card">
+        <ul>
+            <li><code>sw.js</code>: estrategia <b>NETWORK-FIRST</b> 🌐 (con internet muestra SIEMPRE lo último; sin internet usa caché). ⚠️ Diferencia con Maggie (cache-first).</li>
+            <li><code>CACHE_NAME</code>: <code>'sao-chalupa-v2'</code></li>
+            <li>Íconos: pack de <b>favicon.io</b> (texto SAO, fondo <code>#8e24aa</code>)</li>
+            <li><code>og:image</code> con URL ABSOLUTA al <code>android-chrome-512x512.png</code> (WhatsApp no lee SVG)</li>
+            <li>Las actualizaciones de código llegan solas al abrir con internet (no reinstalar)</li>
+        </ul>
+    </div>
+
+    <h2>💡 Lecciones Aprendidas / Tips</h2>
+    <div class="card">
+        <ul>
+            <li>🔑 <code>localStorage</code> es local y FRÁGIL: el cel puede borrarlo solo (pasó el 18/Sep). Por eso existe el Respaldo 📦: exportar seguido.</li>
+            <li>🔑 Un pago con fecha FUTURA se resta del saldo global pero NO aparece en reportes por periodo → descuadre invisible. Guardia 🛡️ + comparar HOME vs reporte.</li>
+            <li>🔑 Inputs <code>type="time"</code>: usar <code>oninput</code> Y <code>onchange</code> para actualización en vivo en todos los navegadores.</li>
+            <li>🔑 Al reemplazar bloques HTML: revisar colitas huérfanas (<code>&lt;p&gt;</code> sueltos, <code>&gt;</code> de más, inputs duplicados).</li>
+            <li>🔑 Fechas ISO <code>YYYY-MM-DD</code> se comparan como texto; objeto Date a mediodía evita el bug del día anterior.</li>
+            <li>🔑 Copiar en móvil: <code>textarea + execCommand</code>. Toasts en vez de <code>alert()</code>.</li>
+            <li>🔑 favicon.io = pack completo de íconos en un click. og:image necesita PNG + URL absoluta.</li>
+            <li>🔑 Network-first durante desarrollo = cero dolor de versiones viejas.</li>
+            <li>🔑 GitHub Pages tarda 1-3 min por commit. WhatsApp cachea previews: usar <code>?v=2</code>.</li>
+        </ul>
+    </div>
+
+    <h2>🕵️ Crónicas de Guerra (casos resueltos)</h2>
+    <div class="card">
+        <p><span class="badge badge-caso">CASO 1 · El Borrado</span></p>
+        <p class="nota">18/Sep/2026: la app abrió sin ningún dato (el navegador limpió localStorage). Los datos se reingresaron a mano. Nació el sistema de Respaldo 📦 para que nunca más duela.</p>
+        <br>
+        <p><span class="badge badge-caso">CASO 2 · El Pago Fantasma</span></p>
+        <p class="nota">18/Sep/2026: el reporte marcaba saldo $1,230 pero sus líneas sumaban $2,230. Diagnóstico: HOME "Pagos" $9,100 vs reporte $8,100 → pago de $1,000 con fecha <b>Domingo 27/Sep</b> (futuro, sin nota) excluido del periodo pero contado en el global. Solución: borrado con doble toque. Saldo real restaurado: $2,230. Nació el guardia 🛡️ de fechas futuras.</p>
+    </div>
+
+    <h2>📝 Checklist del Proyecto</h2>
+    <div class="card">
+        <p><span class="badge badge-listo">HECHO ✅</span></p>
+        <ul>
+            <li>App completa de 6 pantallas con navegación inferior</li>
+            <li>Saldo acumulado global + semáforos + horas extra</li>
+            <li>Cargos Extra 💸 + método de pago 💳</li>
+            <li>PDF Estado de Cuenta 📊 + reporte WhatsApp con desglose</li>
+            <li>Guardia de fechas futuras 🛡️</li>
+            <li>Respaldo Exportar/Importar 📦</li>
+            <li>PWA + offline + íconos + preview WhatsApp</li>
+            <li>Créditos finales 💜 + este contexto v2.0</li>
+        </ul>
+        <br>
+        <p><span class="badge badge-idea">IDEAS OPCIONALES 🌱</span></p>
+        <ul>
+            <li>📊 Reporte mensual (todo un mes en una hoja)</li>
+            <li>🖼️ Imagen apaisada 1200x630 para el preview de WhatsApp</li>
+            <li>🔔 Recordatorio de cobro los jueves</li>
+        </ul>
+    </div>
+
+    <h2>🌸 Créditos</h2>
+    <div class="card" style="text-align: center;">
+        <p>🎤 SAO Control · La Chalupa</p>
+        <p>Para: Javi SAO y su trabajo en LA CHALUPA LERMA 🌮</p>
+        <p>Cliente: Jesus Arias Velazco</p>
+        <p>Creado por: Javi 💜 · Asistencia: Qwen (compañero de código) 🤖</p>
+        <p>Inicio: 6 de Agosto de 2026 · Contexto v2.0: 18 de Septiembre de 2026</p>
+        <p>Repositorio: <code>github.com/saoentertainment/Chalupa</code></p>
+        <p>URL: <code>saoentertainment.github.io/Chalupa/</code></p>
+        <br>
+        <p><i>Hecho con 💜 y cumbia. Cada línea de código tiene sabor. 🎺</i></p>
+    </div>
+
+    <footer>
+        📋 Documento de contexto v2.0 · Memoria viva del proyecto<br>
+        Si algún día querés agregar algo nuevo, mostrale este archivo a tu IA amiga 🤖💜
+    </footer>
+
+</div>
+</body>
+</html>
