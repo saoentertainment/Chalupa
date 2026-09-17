@@ -104,7 +104,7 @@
             border-radius: 10px;
         }
         .nav-btn .nav-icono { font-size: 22px; }
-        .nav-btn.activo { color: var(--azul-claro); }       
+        .nav-btn.activo { color: var(--azul-claro); }
         /* 💰 SALDO GIGANTE */
         .saldo-gigante {
             font-size: 3em;
@@ -170,7 +170,7 @@
         #toast.visible {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
-        } 
+        }
         /* 📝 FORMULARIOS */
         .form-grupo { margin-bottom: 16px; }
         .form-label {
@@ -204,7 +204,7 @@
             font-weight: bold;
             padding: 16px;
             cursor: pointer;
-        }   
+        }
         /* 💵 PANTALLA PAGO */
         .monto-grande {
             font-size: 1.6em !important;
@@ -222,7 +222,7 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .chip:active { background: rgba(25, 118, 210, 0.5); } 
+        .chip:active { background: rgba(25, 118, 210, 0.5); }
         /* 📋 HISTORIAL */
         .hist-item { padding: 14px; }
         .btn-borrar {
@@ -240,7 +240,7 @@
             padding: 6px 2px;
             font-size: 0.75em;
             border-radius: 14px;
-        }        
+        }
     </style>
 </head>
 <body>
@@ -308,9 +308,9 @@
 
             <button class="btn-guardar" onclick="guardarServicio()">💾 GUARDAR SERVICIO</button>
         </div>
-    </div>>
+    </div>
 
-     <!-- 💸 PANTALLA: EXTRA (préstamos y compras) -->
+    <!-- 💸 PANTALLA: EXTRA (préstamos y compras) -->
     <div id="pantalla-extra" class="pantalla">
         <div class="card">
             <h2 style="color: var(--azul-claro); margin-bottom: 8px;">💸 Cargo Extra</h2>
@@ -347,7 +347,8 @@
 
             <button class="btn-guardar" style="background: linear-gradient(135deg, #f57c00, #e65100);" onclick="guardarExtra()">💾 GUARDAR CARGO EXTRA</button>
         </div>
-    </div>   
+    </div>
+
     <!-- 💵 PANTALLA: PAGO -->
     <div id="pantalla-pago" class="pantalla">
         <div class="card">
@@ -367,6 +368,15 @@
                 <button class="chip" onclick="setMonto(550)">$550</button>
                 <button class="chip" onclick="setMonto(1100)">$1,100</button>
                 <button class="chip" onclick="setMonto(2200)">$2,200</button>
+            </div>
+
+            <div class="form-grupo">
+                <label class="form-label">💳 ¿Cómo te pagó?</label>
+                <select id="pg-metodo" class="form-select">
+                    <option value="Efectivo">💵 Efectivo</option>
+                    <option value="Transferencia">📲 Transferencia</option>
+                    <option value="Depósito">🏦 Depósito</option>
+                </select>
             </div>
 
             <div class="form-grupo">
@@ -422,9 +432,13 @@
             </button>
         </div>
     </div>
-    
+
     <!-- 🍞 Toast -->
     <div id="toast"></div>
+
+    <!-- 📦 Input oculto para importar respaldo -->
+    <input type="file" id="file-respaldo" accept=".json,application/json" style="display: none;" onchange="leerRespaldo(this)">
+
     <!-- 🧭 BARRA DE NAVEGACIÓN -->
     <nav class="navbar">
         <button class="nav-btn activo" onclick="irA('home', this)">
@@ -433,9 +447,9 @@
         <button class="nav-btn" onclick="irA('servicio', this)">
             <span class="nav-icono">🎤</span>Servicio
         </button>
-          <button class="nav-btn" onclick="irA('extra', this)">
+        <button class="nav-btn" onclick="irA('extra', this)">
             <span class="nav-icono">💸</span>Extra
-        </button>      
+        </button>
         <button class="nav-btn" onclick="irA('pago', this)">
             <span class="nav-icono">💵</span>Pago
         </button>
@@ -446,14 +460,14 @@
             <span class="nav-icono">📄</span>Reporte
         </button>
     </nav>
-    
+
     <!-- 🧠 CEREBRO: datos + funciones base -->
     <script>
-        // 📦 EL CUADERNO: aquí viven tus servicios y pagos
+        // 📦 EL CUADERNO: aquí viven tus servicios, pagos y extras
         let DATA_APP = {
             servicios: [],  // cada uno: { id, fecha, tipo, horaInicio, horaFin, horas, costo }
-            pagos: [],      // cada uno: { id, fecha, monto, nota }
-            extras: []      // cada uno: { id, fecha, tipo, concepto, monto } 💸🛒
+            pagos: [],      // cada uno: { id, fecha, monto, nota, metodo }
+            extras: []      // cada uno: { id, fecha, tipo, concepto, monto } 💸
         };
 
         // 💾 LEER del estante (localStorage)
@@ -463,8 +477,9 @@
                 try { DATA_APP = JSON.parse(guardado); }
                 catch (e) { console.log('Datos ilegibles, empezamos de cero'); }
             }
-            // 🩹 Migración: si tus datos viejos no tienen "extras", lo creamos vacío
+            // 🩹 Migración: asegura que existan todos los campos en datos viejos
             if (!DATA_APP.extras) DATA_APP.extras = [];
+            DATA_APP.pagos.forEach(p => { if (!p.metodo) p.metodo = ''; });
         }
 
         // 💾 GUARDAR en el estante
@@ -494,10 +509,22 @@
             return dias[fecha.getDay()] + ' ' + String(d).padStart(2, '0') + '/' + meses[fecha.getMonth()];
         }
 
+        // 📅 "2026-08-06" → "06/Ago" (para el PDF estado de cuenta)
+        function formatearFechaCorta(fechaISO) {
+            const [y, m, d] = fechaISO.split('-').map(Number);
+            const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            return String(d).padStart(2, '0') + '/' + meses[m - 1];
+        }
+
         // 📅 Fecha de hoy en formato ISO
         function hoyISO() {
             const f = new Date();
             return f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0') + '-' + String(f.getDate()).padStart(2, '0');
+        }
+
+        // 🛡️ Guardia de fechas futuras (anti-fantasmas 👻)
+        function esFechaFutura(fechaISO) {
+            return fechaISO > hoyISO();
         }
 
         // 🔊 Sonido "ding" al guardar
@@ -593,7 +620,20 @@
                     <span>Registrar Pago</span>
                 </button>
             </div>`;
-            
+
+            // 📦 Tarjeta de respaldo
+            const ultimoRespaldo = localStorage.getItem('saoUltimoRespaldo');
+            html += `
+            <div class="card" style="margin-top: 12px;">
+                <p style="font-weight: bold; color: var(--azul-claro);">📦 Respaldo de seguridad</p>
+                <p style="color: var(--gris); font-size: 0.8em; margin: 6px 0 12px;">${ultimoRespaldo ? 'Último respaldo: ' + formatearFecha(ultimoRespaldo) : '⚠️ Todavía no hiciste ningún respaldo'}</p>
+                <div style="display: flex; gap: 8px;">
+                    <button class="chip" onclick="exportarRespaldo()">⬇️ Exportar</button>
+                    <button class="chip" onclick="document.getElementById('file-respaldo').click()">⬆️ Importar</button>
+                </div>
+                <div id="respaldo-confirmacion" style="display: none; margin-top: 12px;"></div>
+            </div>`;
+
             // 💜 Créditos finales
             html += '<p style="text-align: center; color: var(--gris); font-size: 0.75em; margin-top: 24px; line-height: 1.7;">🎤 SAO Control · TOTAL FEST<br>Karaoke SAO 🎶<br>Cliente: LA CHALUPA LERMA · Jesús Arias Velazco<br>Hecho con 💜 por Javi + Qwen 🤖<br>Agosto 2026</p>';
             cont.innerHTML = html;
@@ -604,7 +644,7 @@
             const mapa = { home: 0, servicio: 1, extra: 2, pago: 3, historial: 4, reporte: 5 };
             irA(nombre, document.querySelectorAll('.nav-btn')[mapa[nombre]]);
         }
-        
+
         // ⏱️ Calcular horas entre inicio y fin (entiende si cruza la medianoche 🌙)
         function calcularHoras(inicio, fin) {
             if (!inicio || !fin) return 0;
@@ -622,6 +662,31 @@
             document.getElementById('sv-horas').textContent = calcularHoras(inicio, fin) + ' hrs';
         }
 
+        // ⏰ Atajos rápidos de horario (inicio)
+        function setInicio(valor) {
+            document.getElementById('sv-inicio').value = valor;
+            actualizarHoras();
+        }
+
+        // ⏰ Atajos rápidos de horario (fin, incluye horas extra)
+        function setFin(valor) {
+            document.getElementById('sv-fin').value = valor;
+            actualizarHoras();
+        }
+
+        // ✍️ Escribir las horas directamente (la hora fin se ajusta sola)
+        function setHorasDirectas(valor) {
+            const horas = parseFloat(valor);
+            if (!horas || horas <= 0 || horas >= 24) return;
+            const inicio = document.getElementById('sv-inicio').value || '20:00';
+            const [hi, mi] = inicio.split(':').map(Number);
+            const totalMin = (hi * 60 + mi + Math.round(horas * 60)) % (24 * 60);
+            const hf = Math.floor(totalMin / 60);
+            const mf = totalMin % 60;
+            document.getElementById('sv-fin').value = String(hf).padStart(2, '0') + ':' + String(mf).padStart(2, '0');
+            actualizarHoras();
+        }
+
         // 💾 Guardar un servicio nuevo
         function guardarServicio() {
             const fecha = document.getElementById('sv-fecha').value;
@@ -631,6 +696,7 @@
             const costo = parseFloat(document.getElementById('sv-costo').value);
 
             if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
+            if (esFechaFutura(fecha)) { mostrarToast('🛡️ Fecha del futuro: corregila para guardar'); return; }
             if (!horaInicio || !horaFin) { mostrarToast('⚠️ Completá los horarios'); return; }
             if (!costo || costo <= 0) { mostrarToast('⚠️ Poné un costo válido'); return; }
 
@@ -656,6 +722,7 @@
             document.getElementById('sv-fecha').value = hoyISO();
             actualizarHoras();
         }
+
         // 💵 Poner un monto rápido (los chips)
         function setMonto(valor) {
             document.getElementById('pg-monto').value = valor;
@@ -686,16 +753,19 @@
         function guardarPago() {
             const fecha = document.getElementById('pg-fecha').value;
             const monto = parseFloat(document.getElementById('pg-monto').value);
+            const metodo = document.getElementById('pg-metodo').value;
             const nota = document.getElementById('pg-nota').value.trim();
 
             if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
+            if (esFechaFutura(fecha)) { mostrarToast('🛡️ Fecha del futuro: corregila para guardar'); return; }
             if (!monto || monto <= 0) { mostrarToast('⚠️ Poné el monto del pago'); return; }
 
             DATA_APP.pagos.push({
                 id: Date.now(),
                 fecha: fecha,
                 monto: monto,
-                nota: nota
+                nota: nota,
+                metodo: metodo
             });
             guardarDatos();
             sonarDing();
@@ -710,8 +780,49 @@
             document.getElementById('pg-fecha').value = hoyISO();
             document.getElementById('pg-monto').value = '';
             document.getElementById('pg-nota').value = '';
+            document.getElementById('pg-metodo').value = 'Efectivo';
             previsualizarPago();
         }
+
+        // 💸 Poner un monto rápido (chips de cargo extra)
+        function setMontoExtra(valor) {
+            document.getElementById('ex-monto').value = valor;
+        }
+
+        // 💾 Guardar un cargo extra (préstamo o compra)
+        function guardarExtra() {
+            const fecha = document.getElementById('ex-fecha').value;
+            const tipo = document.getElementById('ex-tipo').value;
+            const concepto = document.getElementById('ex-concepto').value.trim();
+            const monto = parseFloat(document.getElementById('ex-monto').value);
+
+            if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
+            if (esFechaFutura(fecha)) { mostrarToast('🛡️ Fecha del futuro: corregila para guardar'); return; }
+            if (!concepto) { mostrarToast('⚠️ Escribí el concepto (qué fue)'); return; }
+            if (!monto || monto <= 0) { mostrarToast('⚠️ Poné el monto'); return; }
+
+            DATA_APP.extras.push({
+                id: Date.now(),
+                fecha: fecha,
+                tipo: tipo,
+                concepto: concepto,
+                monto: monto
+            });
+            guardarDatos();
+            sonarDing();
+            vibrar();
+            mostrarToast('✅ Cargo extra guardado');
+            renderHome();
+            setTimeout(() => irADesde('home'), 1000);
+        }
+
+        // 🎬 Preparar el formulario extra al entrar
+        function prepararFormExtra() {
+            document.getElementById('ex-fecha').value = hoyISO();
+            document.getElementById('ex-concepto').value = '';
+            document.getElementById('ex-monto').value = '';
+        }
+
         // 🚦 Calcula cuánto se pagó de cada cargo (servicios + extras)
         // (los pagos cubren primero lo más viejo, como en la vida real)
         function calcularEstados() {
@@ -821,7 +932,7 @@
                     <div class="card hist-item" style="border-left: 4px solid var(--verde);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
-                                <p style="font-weight: bold;">💵 Pago recibido</p>
+                                <p style="font-weight: bold;">${pg.metodo === 'Transferencia' ? '📲' : (pg.metodo === 'Depósito' ? '🏦' : '💵')} Pago recibido${pg.metodo ? ' · ' + pg.metodo : ''}</p>
                                 <p style="color: var(--gris); font-size: 0.85em; margin-top: 2px;">${formatearFecha(pg.fecha)}${pg.nota ? ' · ' + pg.nota : ''}</p>
                                 <p style="margin-top: 6px;"><b style="color: var(--verde);">+${formatearDinero(pg.monto)}</b></p>
                             </div>
@@ -872,6 +983,7 @@
                 }, 3000);
             }
         }
+
         // 📄 Generar el texto del reporte (para WhatsApp y vista previa)
         function generarTextoReporte() {
             const desde = document.getElementById('rp-desde').value;
@@ -919,13 +1031,20 @@
             if (pagos.length) {
                 texto += '\n💵 PAGOS RECIBIDOS:\n';
                 pagos.forEach(p => {
-                    texto += '• ' + formatearFecha(p.fecha) + ' | ' + formatearDinero(p.monto) + (p.nota ? ' | ' + p.nota : '') + '\n';
+                    texto += '• ' + formatearFecha(p.fecha) + ' | ' + formatearDinero(p.monto) + (p.metodo ? ' | ' + p.metodo : '') + (p.nota ? ' | ' + p.nota : '') + '\n';
                 });
             }
 
             texto += '\n💰 Total servicios del periodo: ' + formatearDinero(totalServicios);
             texto += '\n💸 Préstamos y compras del periodo: ' + formatearDinero(totalExtras);
             texto += '\n💵 Pagos del periodo: ' + formatearDinero(totalPagos);
+
+            // 💳 Desglose por método de pago
+            if (pagos.length) {
+                const porMetodo = {};
+                pagos.forEach(p => { const m = p.metodo || 'Sin dato'; porMetodo[m] = (porMetodo[m] || 0) + p.monto; });
+                texto += '\n💳 Desglose: ' + Object.keys(porMetodo).map(m => m + ' ' + formatearDinero(porMetodo[m])).join(' · ');
+            }
 
             const hayPrevios = DATA_APP.servicios.some(s => s.fecha < desde) || DATA_APP.pagos.some(p => p.fecha < desde) || DATA_APP.extras.some(x => x.fecha < desde);
             if (saldo > 0) {
@@ -968,80 +1087,100 @@
             document.body.removeChild(ta);
         }
 
-        // 🖨️ Generar PDF profesional imprimible
+        // 🖨️ Generar PDF estilo ESTADO DE CUENTA (cronológico con saldo corrido)
         function generarPDF() {
             const desde = document.getElementById('rp-desde').value;
             const hasta = document.getElementById('rp-hasta').value;
 
-            const servicios = DATA_APP.servicios
+            // Mezclar todos los movimientos del periodo en orden cronológico
+            const movs = [];
+            DATA_APP.servicios
                 .filter(s => (!desde || s.fecha >= desde) && (!hasta || s.fecha <= hasta))
-                .sort((a, b) => a.fecha.localeCompare(b.fecha));
-            const extras = DATA_APP.extras
+                .forEach(s => movs.push({ fecha: s.fecha, id: s.id, clase: 'servicio', data: s }));
+            DATA_APP.extras
                 .filter(x => (!desde || x.fecha >= desde) && (!hasta || x.fecha <= hasta))
-                .sort((a, b) => a.fecha.localeCompare(b.fecha));
-            const pagos = DATA_APP.pagos
+                .forEach(x => movs.push({ fecha: x.fecha, id: x.id, clase: 'extra', data: x }));
+            DATA_APP.pagos
                 .filter(p => (!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta))
-                .sort((a, b) => a.fecha.localeCompare(b.fecha));
+                .forEach(p => movs.push({ fecha: p.fecha, id: p.id, clase: 'pago', data: p }));
+            movs.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
 
-            const totalServicios = servicios.reduce((suma, s) => suma + s.costo, 0);
-            const totalExtras = extras.reduce((suma, x) => suma + x.monto, 0);
-            const totalPagos = pagos.reduce((suma, p) => suma + p.monto, 0);
+            // Saldo arrastrado de periodos anteriores
+            const cargosPrevios = DATA_APP.servicios.filter(s => desde && s.fecha < desde).reduce((a, s) => a + s.costo, 0) +
+                                  DATA_APP.extras.filter(x => desde && x.fecha < desde).reduce((a, x) => a + x.monto, 0);
+            const abonosPrevios = DATA_APP.pagos.filter(p => desde && p.fecha < desde).reduce((a, p) => a + p.monto, 0);
+            let saldoAcum = cargosPrevios - abonosPrevios;
+
+            let totalCargos = 0, totalAbonos = 0;
+            let filas = '';
+
+            if (saldoAcum > 0) {
+                filas += '<tr style="background:#fff8e1;"><td>—</td><td>📌 Saldo anterior arrastrado</td><td>—</td><td></td><td></td><td style="text-align:right; font-weight:bold; color:#c62828;">' + formatearDinero(saldoAcum) + '</td></tr>';
+            }
+
+            movs.forEach(m => {
+                let concepto = '', metodo = '—', cargo = '', abono = '';
+                if (m.clase === 'servicio') {
+                    const s = m.data;
+                    concepto = '🎤 ' + s.tipo + ' (' + s.horaInicio + '–' + s.horaFin + ' · ' + s.horas + ' hrs)';
+                    cargo = formatearDinero(s.costo);
+                    saldoAcum += s.costo;
+                    totalCargos += s.costo;
+                } else if (m.clase === 'extra') {
+                    const x = m.data;
+                    concepto = (x.tipo === 'Compra' ? '🛒 Compra: ' : '💸 Préstamo: ') + x.concepto;
+                    cargo = formatearDinero(x.monto);
+                    saldoAcum += x.monto;
+                    totalCargos += x.monto;
+                } else {
+                    const p = m.data;
+                    concepto = '💵 Pago recibido' + (p.nota ? ' · ' + p.nota : '');
+                    metodo = p.metodo ? (p.metodo === 'Transferencia' ? '📲 Transferencia' : (p.metodo === 'Depósito' ? '🏦 Depósito' : '💵 Efectivo')) : '—';
+                    abono = formatearDinero(p.monto);
+                    saldoAcum -= p.monto;
+                    totalAbonos += p.monto;
+                }
+                const saldoColor = saldoAcum > 0 ? '#c62828' : '#2e7d32';
+                const fondoFila = m.clase === 'pago' ? ' style="background:#f2f8f2;"' : '';
+                filas += '<tr' + fondoFila + '><td>' + formatearFechaCorta(m.fecha) + '</td><td>' + concepto + '</td><td>' + metodo + '</td><td style="text-align:right;">' + cargo + '</td><td style="text-align:right;">' + abono + '</td><td style="text-align:right; font-weight:bold; color:' + saldoColor + ';">' + formatearDinero(saldoAcum) + '</td></tr>';
+            });
+
             const { saldo } = calcularTotales();
             const saldoColor = saldo > 0 ? '#c62828' : '#2e7d32';
 
-            let filasServicios = '';
-            servicios.forEach((s, i) => {
-                filasServicios += '<tr><td>' + (i + 1) + '</td><td>' + formatearFecha(s.fecha) + '</td><td>' + s.tipo + '</td><td>' + s.horaInicio + ' – ' + s.horaFin + '</td><td style="text-align:center;">' + s.horas + '</td><td style="text-align:right;">' + formatearDinero(s.costo) + '</td></tr>';
-            });
-
-            let filasExtras = '';
-            extras.forEach((x, i) => {
-                const icono = x.tipo === 'Compra' ? '🛒' : '💸';
-                filasExtras += '<tr><td>' + (i + 1) + '</td><td>' + formatearFecha(x.fecha) + '</td><td>' + icono + ' ' + x.tipo + '</td><td>' + x.concepto + '</td><td style="text-align:right;">' + formatearDinero(x.monto) + '</td></tr>';
-            });
-
-            let filasPagos = '';
-            pagos.forEach(p => {
-                filasPagos += '<tr><td>' + formatearFecha(p.fecha) + '</td><td>' + (p.nota || '—') + '</td><td style="text-align:right;">' + formatearDinero(p.monto) + '</td></tr>';
-            });
-
-            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte — TOTAL FEST</title><style>' +
+            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estado de Cuenta — TOTAL FEST</title><style>' +
                 "* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }" +
                 'body { padding: 40px; color: #1a2332; }' +
                 '.header { border-bottom: 3px solid #8e24aa; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }' +
                 '.marca h1 { color: #8e24aa; font-size: 22px; }' +
                 '.marca p { color: #555; font-size: 13px; }' +
                 '.meta { text-align: right; font-size: 13px; color: #555; }' +
-                '.cliente { background: #f5f7fa; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height: 1.6; }' +
-                'h2 { font-size: 15px; color: #1976d2; margin: 20px 0 8px; text-transform: uppercase; }' +
-                'table { width: 100%; border-collapse: collapse; font-size: 13px; }' +
-                'th { background: #0a1929; color: #fff; padding: 8px 10px; text-align: left; }' +
-                'td { padding: 8px 10px; border-bottom: 1px solid #e0e6ed; }' +
-                '.totales { margin-top: 24px; background: #f5f7fa; border-radius: 8px; padding: 18px; max-width: 380px; margin-left: auto; font-size: 14px; }' +
-                '.totales div { display: flex; justify-content: space-between; padding: 4px 0; }' +
-                '.saldo-final { border-top: 2px solid #0a1929; margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 16px; color: ' + saldoColor + '; }' +
-                '.firmas { display: flex; justify-content: space-around; margin-top: 70px; }' +
+                '.cliente { background: #f5f7fa; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; }' +
+                '.resumen { background: #fdf5f5; border: 1px solid #e5c9c9; border-radius: 8px; padding: 16px 18px; margin-bottom: 24px; font-size: 14px; }' +
+                '.resumen div { display: flex; justify-content: space-between; padding: 3px 0; }' +
+                '.resumen .saldo-final { border-top: 2px solid #0a1929; margin-top: 8px; padding-top: 8px; font-weight: bold; font-size: 17px; color: ' + saldoColor + '; }' +
+                'h2 { font-size: 15px; color: #1976d2; margin: 0 0 8px; text-transform: uppercase; }' +
+                'table { width: 100%; border-collapse: collapse; font-size: 12px; }' +
+                'th { background: #0a1929; color: #fff; padding: 8px 8px; text-align: left; }' +
+                'td { padding: 7px 8px; border-bottom: 1px solid #e0e6ed; vertical-align: top; }' +
+                '.firmas { display: flex; justify-content: space-around; margin-top: 60px; }' +
                 '.firma { text-align: center; font-size: 13px; color: #555; }' +
                 '.firma .linea { width: 200px; border-top: 1px solid #333; margin-bottom: 6px; }' +
                 '.pie { margin-top: 40px; text-align: center; font-size: 11px; color: #999; }' +
                 '@media print { body { padding: 20px; } }' +
                 '</style></head><body>' +
                 '<div class="header"><div class="marca"><h1>🎤 KARAOKE SAO · TOTAL FEST</h1><p>Servicios Musicales</p></div>' +
-                '<div class="meta"><b>REPORTE DE SERVICIOS</b><br>Periodo: ' + (desde ? formatearFecha(desde) : 'inicio') + ' – ' + (hasta ? formatearFecha(hasta) : 'hoy') + '<br>Generado: ' + formatearFecha(hoyISO()) + '</div></div>' +
+                '<div class="meta"><b>ESTADO DE CUENTA</b><br>Periodo: ' + (desde ? formatearFecha(desde) : 'inicio') + ' – ' + (hasta ? formatearFecha(hasta) : 'hoy') + '<br>Generado: ' + formatearFecha(hoyISO()) + '</div></div>' +
                 '<div class="cliente"><b>Cliente:</b> LA CHALUPA LERMA<br><b>At\'n:</b> Jesus Arias Velazco</div>' +
-                '<h2>🎤 Detalle de servicios</h2><table><tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Horario</th><th>Hrs</th><th style="text-align:right;">Costo</th></tr>' +
-                (filasServicios || '<tr><td colspan="6" style="text-align:center; color:#999;">Sin servicios en este periodo</td></tr>') + '</table>' +
-                '<h2>💸 Préstamos y compras</h2><table><tr><th>#</th><th>Fecha</th><th>Tipo</th><th>Concepto</th><th style="text-align:right;">Monto</th></tr>' +
-                (filasExtras || '<tr><td colspan="5" style="text-align:center; color:#999;">Sin préstamos ni compras en este periodo</td></tr>') + '</table>' +
-                '<h2>💵 Pagos recibidos</h2><table><tr><th>Fecha</th><th>Nota</th><th style="text-align:right;">Monto</th></tr>' +
-                (filasPagos || '<tr><td colspan="3" style="text-align:center; color:#999;">Sin pagos en este periodo</td></tr>') + '</table>' +
-                '<div class="totales"><div><span>Total servicios:</span><b>' + formatearDinero(totalServicios) + '</b></div>' +
-                '<div><span>Préstamos y compras:</span><b>' + formatearDinero(totalExtras) + '</b></div>' +
-                '<div><span>Pagos recibidos:</span><b>' + formatearDinero(totalPagos) + '</b></div>' +
-                '<div class="saldo-final"><span>' + (saldo > 0 ? 'SALDO PENDIENTE:' : (saldo < 0 ? 'SALDO A FAVOR:' : 'ESTADO:')) + '</span><span>' + (saldo > 0 ? formatearDinero(saldo) : (saldo < 0 ? formatearDinero(Math.abs(saldo)) : 'LIQUIDADO ✅')) + '</span></div></div>' +
+                '<div class="resumen"><div><span>Total Cargos (Servicios + Varios):</span><b>' + formatearDinero(totalCargos) + '</b></div>' +
+                '<div><span>Total Abonos (Pagos recibidos):</span><b>' + formatearDinero(totalAbonos) + '</b></div>' +
+                '<div class="saldo-final"><span>🔴 SALDO PENDIENTE ACTUAL:</span><span>' + formatearDinero(saldo) + '</span></div></div>' +
+                '<h2>📑 Movimiento detallado</h2>' +
+                '<table><tr><th>Fecha</th><th>Concepto</th><th>Método</th><th style="text-align:right;">Cargo</th><th style="text-align:right;">Abono</th><th style="text-align:right;">Saldo</th></tr>' +
+                (filas || '<tr><td colspan="6" style="text-align:center; color:#999;">Sin movimientos en este periodo</td></tr>') + '</table>' +
                 '<div class="firmas"><div class="firma"><div class="linea"></div>Jesús Arias Velazco<br>LA CHALUPA LERMA</div>' +
                 '<div class="firma"><div class="linea"></div>Karaoke SAO<br>TOTAL FEST</div></div>' +
-                '<div class="pie">Documento generado por SAO Control · TOTAL FEST · ' + formatearFecha(hoyISO()) + '</div>' +
+                '<div class="pie">TOTAL FEST · Servicios Musicales · Documento generado el ' + formatearFecha(hoyISO()) + '</div>' +
                 '<script>window.onload = function() { window.print(); }<\/script>' +
                 '</body></html>';
 
@@ -1063,72 +1202,86 @@
             document.getElementById('rp-desde').value = fechas.length ? fechas[0] : hoyISO();
             document.getElementById('rp-hasta').value = hoyISO();
             renderReporte();
-        }  
-                // ⏰ Atajos rápidos de horario (inicio)
-        function setInicio(valor) {
-            document.getElementById('sv-inicio').value = valor;
-            actualizarHoras();
         }
 
-        // ⏰ Atajos rápidos de horario (fin, incluye horas extra)
-        function setFin(valor) {
-            document.getElementById('sv-fin').value = valor;
-            actualizarHoras();
-        }
-
-        // 💸 Poner un monto rápido (chips de cargo extra)
-        function setMontoExtra(valor) {
-            document.getElementById('ex-monto').value = valor;
-        }
-
-        // 💾 Guardar un cargo extra (préstamo o compra)
-        function guardarExtra() {
-            const fecha = document.getElementById('ex-fecha').value;
-            const tipo = document.getElementById('ex-tipo').value;
-            const concepto = document.getElementById('ex-concepto').value.trim();
-            const monto = parseFloat(document.getElementById('ex-monto').value);
-
-            if (!fecha) { mostrarToast('⚠️ Elegí una fecha'); return; }
-            if (!concepto) { mostrarToast('⚠️ Escribí el concepto (qué fue)'); return; }
-            if (!monto || monto <= 0) { mostrarToast('⚠️ Poné el monto'); return; }
-
-            DATA_APP.extras.push({
-                id: Date.now(),
-                fecha: fecha,
-                tipo: tipo,
-                concepto: concepto,
-                monto: monto
-            });
-            guardarDatos();
+        // 📦 EXPORTAR respaldo (descarga un archivo JSON con todo)
+        function exportarRespaldo() {
+            const datos = JSON.stringify(DATA_APP, null, 2);
+            const blob = new Blob([datos], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'respaldo-sao-chalupa-' + hoyISO() + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            localStorage.setItem('saoUltimoRespaldo', hoyISO());
+            renderHome();
             sonarDing();
             vibrar();
-            mostrarToast('✅ Cargo extra guardado');
-            renderHome();
-            setTimeout(() => irADesde('home'), 1000);
+            mostrarToast('📦 Respaldo descargado');
         }
 
-        // 🎬 Preparar el formulario extra al entrar
-        function prepararFormExtra() {
-            document.getElementById('ex-fecha').value = hoyISO();
-            document.getElementById('ex-concepto').value = '';
-            document.getElementById('ex-monto').value = '';
+        // 📦 LEER archivo de respaldo (paso 1 de importar)
+        let respaldoPendiente = null;
+        function leerRespaldo(input) {
+            const archivo = input.files[0];
+            if (!archivo) return;
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    const datos = JSON.parse(e.target.result);
+                    if (!datos.servicios || !datos.pagos) throw new Error('formato');
+                    respaldoPendiente = datos;
+                    const nServ = datos.servicios.length;
+                    const nPagos = datos.pagos.length;
+                    const nExtras = datos.extras ? datos.extras.length : 0;
+                    const caja = document.getElementById('respaldo-confirmacion');
+                    caja.style.display = 'block';
+                    caja.innerHTML = '<p style="font-size: 0.85em; color: var(--amarillo);">⚠️ Respaldo encontrado:</p>' +
+                        '<p style="font-size: 0.85em; margin: 6px 0;">🎤 ' + nServ + ' servicios · 💵 ' + nPagos + ' pagos · 💸 ' + nExtras + ' extras</p>' +
+                        '<p style="font-size: 0.8em; color: var(--rojo);">Esto REEMPLAZA tus datos actuales.</p>' +
+                        '<div style="display: flex; gap: 8px; margin-top: 10px;">' +
+                        '<button class="chip" style="background: rgba(76,175,80,0.2); border-color: var(--verde); color: var(--verde);" onclick="restaurarRespaldo()">✅ RESTAURAR</button>' +
+                        '<button class="chip" onclick="cancelarRespaldo()">❌ Cancelar</button>' +
+                        '</div>';
+                    vibrar();
+                } catch (err) {
+                    mostrarToast('⚠️ El archivo no es un respaldo válido');
+                }
+                input.value = ''; // permite volver a elegir el mismo archivo
+            };
+            lector.readAsText(archivo);
         }
-         // ✍️ Escribir las horas directamente (la hora fin se ajusta sola)
-        function setHorasDirectas(valor) {
-            const horas = parseFloat(valor);
-            if (!horas || horas <= 0 || horas >= 24) return;
-            const inicio = document.getElementById('sv-inicio').value || '20:00';
-            const [hi, mi] = inicio.split(':').map(Number);
-            const totalMin = (hi * 60 + mi + Math.round(horas * 60)) % (24 * 60);
-            const hf = Math.floor(totalMin / 60);
-            const mf = totalMin % 60;
-            document.getElementById('sv-fin').value = String(hf).padStart(2, '0') + ':' + String(mf).padStart(2, '0');
-            actualizarHoras();
-        }       
+
+        // 📦 RESTAURAR respaldo (paso 2, después de confirmar)
+        function restaurarRespaldo() {
+            if (!respaldoPendiente) return;
+            DATA_APP = respaldoPendiente;
+            if (!DATA_APP.extras) DATA_APP.extras = [];
+            DATA_APP.pagos.forEach(p => { if (!p.metodo) p.metodo = ''; });
+            respaldoPendiente = null;
+            guardarDatos();
+            renderHome();
+            renderHistorial();
+            sonarDing();
+            vibrar();
+            mostrarToast('✅ Datos restaurados');
+        }
+
+        // 📦 CANCELAR importación
+        function cancelarRespaldo() {
+            respaldoPendiente = null;
+            document.getElementById('respaldo-confirmacion').style.display = 'none';
+            document.getElementById('respaldo-confirmacion').innerHTML = '';
+        }
+
         // 🚀 ARRANQUE
         cargarDatos();
         renderHome();
     </script>
+
     <!-- 🧠 JAVASCRIPT: navegación entre pantallas -->
     <script>
         function irA(nombre, boton) {
@@ -1143,14 +1296,14 @@
             window.scrollTo(0, 0);
             // 🎬 Preparar formularios y refrescar pantallas al entrar
             if (nombre === 'servicio' && typeof prepararFormServicio === 'function') prepararFormServicio();
-            if (nombre === 'extra' && typeof prepararFormExtra === 'function') prepararFormExtra();          
+            if (nombre === 'extra' && typeof prepararFormExtra === 'function') prepararFormExtra();
             if (nombre === 'pago' && typeof prepararFormPago === 'function') prepararFormPago();
-            if (nombre === 'historial' && typeof renderHistorial === 'function') renderHistorial(); 
-            if (nombre === 'reporte' && typeof prepararFormReporte === 'function') prepararFormReporte();            
+            if (nombre === 'historial' && typeof renderHistorial === 'function') renderHistorial();
+            if (nombre === 'reporte' && typeof prepararFormReporte === 'function') prepararFormReporte();
             if (nombre === 'home' && typeof renderHome === 'function') renderHome();
         }
     </script>
-    
+
     <!-- 🛡️ ACTIVAR SERVICE WORKER (modo offline) -->
     <script>
         if ('serviceWorker' in navigator) {
